@@ -210,11 +210,11 @@ document.getElementById('todayJ').textContent='📅 '+jdate(new Date());
 <script>
 /* ================= نقش‌ها و ناوبری (تمایز کامل مدیر/فروشنده/حسابدار) ================= */
 const USERS={
- admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','categories','products','inventory','reports','expenses','settings']},
+ admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','categories','products','inventory','salesreport','reports','expenses','settings']},
  seller:{pass:'1111',role:'فروشنده',cls:'role-seller',tabs:['pos','products']},
- acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['reports','expenses','inventory','settings']}
+ acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['reports','salesreport','expenses','inventory','settings']}
 };
-const TAB_LABELS={pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
+const TAB_LABELS={pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',salesreport:'🧾 گزارش‌گیری',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
 let curTab='pos';
 
 function doLogin(){
@@ -238,6 +238,7 @@ function renderTabs(){
 function renderTab(){
  if(curTab==='pos')renderPOS();
  else if(curTab==='categories')renderCategories();
+ else if(curTab==='salesreport')renderSalesReport();
  else if(curTab==='products')renderProducts();
  else if(curTab==='inventory')renderInventory();
  else if(curTab==='reports')renderReports();
@@ -804,21 +805,48 @@ function scanForProduct(){openScanModal(code=>{
 </script>
 <script>
 /* ================= انبار ================= */
+let invF={cat:'',brand:'',q:''};
+const LOW_LIMIT=5;
+function catMatch(pc,sel){return !sel||pc===sel||(pc||'').startsWith(sel+' › ');}
+function allBrands(){return [...new Set(products.map(p=>(p.brand||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'));}
+function catOptions(sel){
+ const out=[];const walk=(pid,d)=>catChildren(pid).forEach(c=>{const p=catPath(c.id);out.push(`<option value="${esc(p)}" ${p===sel?'selected':''}>${'— '.repeat(d)}${esc(c.name)}</option>`);walk(c.id,d+1);});walk(null,0);
+ return '<option value="">همه دسته‌ها و زیرگروه‌ها</option>'+out.join('');
+}
+function brandOptions(sel){return '<option value="">همه برندها</option>'+allBrands().map(b=>`<option ${b===sel?'selected':''}>${esc(b)}</option>`).join('');}
+function stockRow(p){const low=p.stock<=LOW_LIMIT;return `<tr class="${low?'low':''}">
+  <td>${esc(p.name)}</td><td>${esc(p.brand)}</td><td class="text-xs">${esc(p.category||'—')}</td><td class="font-bold ${low?'text-red-400':''}">${fmt(p.stock)}</td>
+  <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',1)">+</button><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',-1)">−</button><button class="btn btn-a text-xs" onclick="stockSet('${esc(p.barcode)}')">تنظیم</button></td></tr>`;}
 function renderInventory(){
  const c=document.getElementById('content');
- const totalValue=products.reduce((s,p)=>s+p.purchase_price*p.stock,0);
- const totalRetail=products.reduce((s,p)=>s+p.sale_price*p.stock,0);
+ const isAdmin=user&&user.username==='admin';
+ const low=products.filter(p=>p.stock<=LOW_LIMIT).sort((a,b)=>a.stock-b.stock);
+ const list=products.filter(p=>catMatch(p.category,invF.cat)&&(!invF.brand||(p.brand||'').trim()===invF.brand)&&(!invF.q||(p.name+' '+p.barcode).includes(invF.q)));
+ const sum=(l,k)=>l.reduce((s,p)=>s+(p[k]||0)*(p.stock||0),0);
+ const qty=list.reduce((s,p)=>s+(p.stock||0),0);
+ // خلاصه به تفکیک برند برای فیلتر فعلی
+ const byB={};list.forEach(p=>{const k=p.brand||'بدون برند';byB[k]=byB[k]||{n:0,q:0,v:0};byB[k].n++;byB[k].q+=p.stock;byB[k].v+=p.purchase_price*p.stock;});
  c.innerHTML=`
- <div class="grid grid-cols-2 gap-2 mb-3">
-  <div class="card p-3"><div class="text-xs text-slate-400">ارزش موجودی (بهای تمام‌شده)</div><div class="font-bold text-amber-300">${fmoney(totalValue)}</div></div>
-  <div class="card p-3"><div class="text-xs text-slate-400">ارزش فروش موجودی</div><div class="font-bold text-emerald-400">${fmoney(totalRetail)}</div></div>
+ ${low.length?`<div class="card p-3 mb-3" style="border-color:#ef4444"><h3 class="font-bold text-red-400 mb-2">⚠️ کالاهای رو به اتمام (${fmt(LOW_LIMIT)} عدد و کمتر): ${fmt(low.length)} قلم</h3>
+  <div class="overflow-x-auto"><table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>${low.map(stockRow).join('')}</tbody></table></div></div>`
+  :`<div class="card p-3 mb-3 text-emerald-400 text-sm">✅ هیچ کالایی ${fmt(LOW_LIMIT)} عدد یا کمتر موجودی ندارد.</div>`}
+ ${isAdmin?`<div class="card p-3 mb-3"><h3 class="font-bold mb-2">گزارش موجودی بر اساس دسته، زیرگروه و برند</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+   <select onchange="invF.cat=this.value;renderInventory()">${catOptions(invF.cat)}</select>
+   <select onchange="invF.brand=this.value;renderInventory()">${brandOptions(invF.brand)}</select>
+   <input placeholder="جستجوی نام یا بارکد" value="${esc(invF.q)}" onchange="invF.q=this.value.trim();renderInventory()">
+  </div></div>`:''}
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+  <div class="card p-3"><div class="text-xs text-slate-400">تعداد اقلام</div><div class="font-bold">${fmt(list.length)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">جمع موجودی (عدد)</div><div class="font-bold">${fmt(qty)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">ارزش موجودی (بهای تمام‌شده)</div><div class="font-bold text-amber-300">${fmoney(sum(list,'purchase_price'))}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">ارزش فروش موجودی</div><div class="font-bold text-emerald-400">${fmoney(sum(list,'sale_price'))}</div></div>
  </div>
+ ${Object.keys(byB).length>1?`<div class="card p-3 mb-3 overflow-x-auto"><h3 class="font-bold mb-2 text-sm">خلاصه به تفکیک برند</h3><table><thead><tr><th>برند</th><th>اقلام</th><th>موجودی</th><th>ارزش خرید</th></tr></thead><tbody>
+  ${Object.entries(byB).sort((a,b)=>b[1].v-a[1].v).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${fmt(v.n)}</td><td>${fmt(v.q)}</td><td>${fmoney(v.v)}</td></tr>`).join('')}</tbody></table></div>`:''}
  <div class="card p-3 overflow-x-auto">
- <table><thead><tr><th>نام</th><th>برند</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>
- ${products.map(p=>`<tr class="${p.stock<5?'low':''}">
-  <td>${esc(p.name)}</td><td>${esc(p.brand)}</td><td class="font-bold ${p.stock<5?'text-red-400':''}">${fmt(p.stock)}</td>
-  <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',1)">+</button><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',-1)">−</button><button class="btn btn-a text-xs" onclick="stockSet('${esc(p.barcode)}')">تنظیم</button></td>
- </tr>`).join('')}</tbody></table></div>`;
+ <table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>
+ ${list.slice().sort((a,b)=>a.stock-b.stock).map(stockRow).join('')||'<tr><td colspan="5">کالایی یافت نشد</td></tr>'}</tbody></table></div>`;
 }
 function stockAdj(code,d){
  const p=products.find(x=>x.barcode===code);
@@ -843,6 +871,7 @@ function renderPOS(){
  </div>
  <div class="card p-3"><h2 class="font-bold mb-2">سبد خرید</h2><div id="cartRows"></div>
   <div id="cartTotals" class="border-t border-slate-600 mt-3 pt-3"></div>
+  <div class="mt-3"><label class="text-xs">نوع فروش / پرداخت</label><select id="payMethod"><option>نقدی</option><option>کارتخوان</option><option>کارت به کارت</option><option>نسیه</option><option>آنلاین</option></select></div>
   <button class="btn btn-p w-full mt-3" onclick="checkout()">ثبت فروش</button>
  </div><div id="receipt" class="mt-3"></div>`;
  drawCart();
@@ -898,10 +927,10 @@ function checkout(){
  const m=cartMath();
  const items=cart.map(r=>{const p=products.find(x=>x.barcode===r.barcode);
   const line=p.sale_price*r.qty;
-  return {barcode:p.barcode,name:p.name,brand:p.brand,qty:r.qty,purchase_price:p.purchase_price,sale_price:p.sale_price,vat_percent:p.vat_percent,
+  return {barcode:p.barcode,name:p.name,brand:p.brand,category:p.category||'',qty:r.qty,purchase_price:p.purchase_price,sale_price:p.sale_price,vat_percent:p.vat_percent,
    line_total:line,vat:line*(p.vat_percent||0)/100,cogs:p.purchase_price*r.qty,gross_profit:(p.sale_price-p.purchase_price)*r.qty};});
  const inv={id:Date.now(),date:new Date().toISOString(),jalali_date:jdate(new Date()),
-  seller:user.username,seller_name:user.role,items,
+  seller:user.username,seller_name:user.role,pay_method:(document.getElementById('payMethod')||{}).value||'نقدی',items,
   revenue:m.net,cogs:items.reduce((s,i)=>s+i.cogs,0),
   gross_profit:m.profit,vat:m.vat,total:m.grand};
  for(const r of cart){const p=products.find(x=>x.barcode===r.barcode);p.stock-=r.qty;}
@@ -1229,6 +1258,77 @@ function openCatPicker(){
 function filterCatPicker(q){q=q.trim();document.querySelectorAll('#catList .cat-pick').forEach(b=>{b.style.display=!q||b.textContent.includes(q)?'':'none';});}
 function pickCat(id){const el=document.getElementById('pCat');if(el)el.value=id?catPath(id):'';closeCatPicker();}
 function closeCatPicker(){const m=document.getElementById('catModal');m.classList.add('hidden');m.innerHTML='';}
+</script>
+<script>
+/* ================= گزارش‌گیری فروش و سود و زیان ================= */
+let rpF={period:'day',from:'',to:'',by:'product',cat:'',brand:'',pay:''};
+function dayStart(d){d=new Date(d);d.setHours(0,0,0,0);return d;}
+function rpRange(){
+ const now=new Date();let from,to=new Date(now);to.setHours(23,59,59,999);
+ if(rpF.period==='day')from=dayStart(now);
+ else if(rpF.period==='week'){from=dayStart(now);from.setDate(from.getDate()-((from.getDay()+1)%7));} // شروع هفته: شنبه
+ else if(rpF.period==='month'){// ماه شمسی جاری
+  from=dayStart(now);const dd=()=>+new Intl.DateTimeFormat('en-u-ca-persian',{day:'numeric'}).format(from);let g=0;while(dd()>1&&g++<31)from.setDate(from.getDate()-1);}
+ else {from=rpF.from?dayStart(rpF.from):dayStart(now);to=rpF.to?new Date(rpF.to):new Date(now);to.setHours(23,59,59,999);}
+ return {from,to};
+}
+function itemCat(it){if(it.category)return it.category;const p=products.find(x=>x.barcode===it.barcode);return p?p.category||'':'';}
+function itemBrand(it){if(it.brand)return it.brand;const p=products.find(x=>x.barcode===it.barcode);return p?p.brand||'':'';}
+function setRp(k,v){rpF[k]=v;renderSalesReport();}
+function renderSalesReport(){
+ const c=document.getElementById('content');const {from,to}=rpRange();
+ const invs=invoices.filter(i=>{const d=new Date(i.date);return d>=from&&d<=to&&(!rpF.pay||(i.pay_method||'نقدی')===rpF.pay);});
+ // اقلام فیلترشده
+ const rows=[];invs.forEach(i=>(i.items||[]).forEach(it=>{const cat=itemCat(it),br=itemBrand(it);
+  if(!catMatch(cat,rpF.cat))return;if(rpF.brand&&br!==rpF.brand)return;
+  const rev=it.line_total??(it.sale_price||0)*(it.qty||0),cogs=it.cogs??(it.purchase_price||0)*(it.qty||0);
+  rows.push({inv:i,name:it.name,barcode:it.barcode,cat:cat||'بدون دسته',brand:br||'بدون برند',pay:i.pay_method||'نقدی',qty:it.qty||0,rev,cogs,vat:it.vat||0,profit:rev-cogs});}));
+ const tot=rows.reduce((a,r)=>{a.qty+=r.qty;a.rev+=r.rev;a.cogs+=r.cogs;a.vat+=r.vat;a.profit+=r.profit;return a;},{qty:0,rev:0,cogs:0,vat:0,profit:0});
+ const filtered=rpF.cat||rpF.brand;
+ const exp=filtered?0:expenses.filter(e=>{const d=new Date(e.date);return d>=from&&d<=to;}).reduce((s,e)=>s+(+e.amount||0),0);
+ const net=tot.profit-exp;
+ const keyOf={product:r=>r.name,category:r=>r.cat,brand:r=>r.brand,pay:r=>r.pay,day:r=>jdate(new Date(r.inv.date))};
+ const grp={};rows.forEach(r=>{const k=keyOf[rpF.by](r);const g=grp[k]=grp[k]||{qty:0,rev:0,cogs:0,profit:0,inv:new Set()};g.qty+=r.qty;g.rev+=r.rev;g.cogs+=r.cogs;g.profit+=r.profit;g.inv.add(r.inv.id);});
+ const byLbl={product:'محصول',category:'دسته',brand:'برند',pay:'نوع فروش',day:'روز'};
+ const ent=Object.entries(grp).sort((a,b)=>rpF.by==='day'?0:b[1].rev-a[1].rev);
+ const pays=[...new Set(['نقدی','کارتخوان','کارت به کارت','نسیه','آنلاین',...invoices.map(i=>i.pay_method||'نقدی')])];
+ const pb=(k,l)=>`<button class="btn flex-1 ${rpF.period===k?'btn-p':'btn-s'}" onclick="setRp('period','${k}')">${l}</button>`;
+ c.innerHTML=`<div class="card p-3 mb-3"><h3 class="font-bold mb-2">🧾 گزارش‌گیری فروش</h3>
+  <div class="flex gap-2 mb-2">${pb('day','روزانه')}${pb('week','هفتگی')}${pb('month','ماهانه')}${pb('custom','بازه دلخواه')}</div>
+  ${rpF.period==='custom'?`<div class="grid grid-cols-2 gap-2 mb-2"><div><label class="text-xs">از تاریخ</label><input type="date" value="${rpF.from}" onchange="setRp('from',this.value)"></div><div><label class="text-xs">تا تاریخ</label><input type="date" value="${rpF.to}" onchange="setRp('to',this.value)"></div></div>`:''}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+   <div><label class="text-xs">گروه‌بندی بر اساس</label><select onchange="setRp('by',this.value)">${Object.entries(byLbl).map(([k,v])=>`<option value="${k}" ${rpF.by===k?'selected':''}>${v}</option>`).join('')}</select></div>
+   <div><label class="text-xs">دسته / زیرگروه</label><select onchange="setRp('cat',this.value)">${catOptions(rpF.cat)}</select></div>
+   <div><label class="text-xs">برند</label><select onchange="setRp('brand',this.value)">${brandOptions(rpF.brand)}</select></div>
+   <div><label class="text-xs">نوع فروش</label><select onchange="setRp('pay',this.value)"><option value="">همه</option>${pays.map(p=>`<option ${p===rpF.pay?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+  </div>
+  <p class="text-xs text-slate-400 mt-2">بازه: ${jdate(from)} تا ${jdate(to)}</p></div>
+ <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+  <div class="card p-3"><div class="text-xs text-slate-400">تعداد فاکتور</div><div class="font-bold">${fmt(new Set(rows.map(r=>r.inv.id)).size)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">تعداد کالای فروخته‌شده</div><div class="font-bold">${fmt(tot.qty)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">فروش (بدون مالیات)</div><div class="font-bold text-emerald-400">${fmoney(tot.rev)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">بهای تمام‌شده</div><div class="font-bold text-amber-300">${fmoney(tot.cogs)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">سود ناخالص</div><div class="font-bold ${tot.profit>=0?'text-emerald-400':'text-red-400'}">${fmoney(tot.profit)}</div></div>
+  <div class="card p-3"><div class="text-xs text-slate-400">مالیات ارزش افزوده</div><div class="font-bold">${fmoney(tot.vat)}</div></div>
+ </div>
+ <div class="card p-3 mb-3"><h3 class="font-bold mb-2">سود و زیان این بازه</h3>
+  <div class="flex justify-between"><span>سود ناخالص</span><b>${fmoney(tot.profit)}</b></div>
+  <div class="flex justify-between text-red-400"><span>هزینه‌ها</span><b>${filtered?'—':fmoney(exp)}</b></div>
+  <div class="flex justify-between text-lg mt-1 ${net>=0?'text-emerald-400':'text-red-400'}"><span>${net>=0?'سود خالص':'زیان خالص'}</span><b>${fmoney(Math.abs(net))}</b></div>
+  ${filtered?'<p class="text-xs text-slate-400 mt-1">وقتی دسته یا برند انتخاب شده، هزینه‌های عمومی کسر نمی‌شود و فقط سود ناخالص همان گروه نشان داده می‌شود.</p>':''}</div>
+ <div class="card p-3 overflow-x-auto"><h3 class="font-bold mb-2">به تفکیک ${byLbl[rpF.by]}</h3>
+  <table><thead><tr><th>${byLbl[rpF.by]}</th><th>فاکتور</th><th>تعداد</th><th>فروش</th><th>بهای تمام‌شده</th><th>سود</th></tr></thead><tbody>
+  ${ent.map(([k,g])=>`<tr><td>${esc(k)}</td><td>${fmt(g.inv.size)}</td><td>${fmt(g.qty)}</td><td>${fmoney(g.rev)}</td><td>${fmoney(g.cogs)}</td><td class="${g.profit>=0?'text-emerald-400':'text-red-400'}">${fmoney(g.profit)}</td></tr>`).join('')||'<tr><td colspan="6">در این بازه فروشی ثبت نشده</td></tr>'}
+  </tbody></table>
+  <button class="btn btn-s w-full mt-3" onclick="exportSalesCsv()">⬇️ دریافت فایل اکسل (CSV)</button></div>`;
+ window._rpRows=rows;
+}
+function exportSalesCsv(){
+ const rows=window._rpRows||[];const h=['تاریخ','فاکتور','نوع فروش','محصول','بارکد','دسته','برند','تعداد','فروش','بهای تمام‌شده','سود'];
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const csv='\ufeff'+[h,...rows.map(r=>[jdate(new Date(r.inv.date)),r.inv.id,r.pay,r.name,r.barcode,r.cat,r.brand,r.qty,r.rev,r.cogs,r.profit])].map(l=>l.map(q).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='sales-report.csv';a.click();
+}
 </script>
 </body>
 </html>
