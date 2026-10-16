@@ -4,57 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>فروشگاه آسان — صندوق و حسابداری</title>
+<title>آرایشی بهداشتی — صندوق و حسابداری</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon.svg">
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<style>
-/* ===== Embedded fallback stylesheet (works with NO CDN at all) ===== */
-/* Layout */
-.hidden{display:none!important}
-.flex{display:flex}.grid{display:grid}
-.items-center{align-items:center}.items-end{align-items:flex-end}
-.justify-center{justify-content:center}.justify-between{justify-content:space-between}
-.flex-1{flex:1 1 0%}.flex-wrap{flex-wrap:wrap}.block{display:block}
-.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.gap-1{gap:.25rem}.gap-2{gap:.5rem}
-.min-h-screen{min-height:100vh}
-.mx-auto{margin-left:auto;margin-right:auto}
-.w-full{width:100%}
-.max-w-sm{max-width:24rem}.max-w-3xl{max-width:48rem}
-.min-w-\[110px\]{min-width:110px}.min-w-\[140px\]{min-width:140px}
-.text-center{text-align:center}.text-right{text-align:right}
-.overflow-x-auto{overflow-x:auto}
-/* Spacing */
-.p-2{padding:.5rem}.p-3{padding:.75rem}.p-4{padding:1rem}.p-6{padding:1.5rem}
-.py-2{padding-top:.5rem;padding-bottom:.5rem}.pt-3{padding-top:.75rem}.pb-2{padding-bottom:.5rem}.pb-24{padding-bottom:6rem}
-.mt-1{margin-top:.25rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}
-.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}
-.my-2{margin-top:.5rem;margin-bottom:.5rem}
-/* Typography */
-.text-\[11px\]{font-size:11px}.text-xs{font-size:.75rem}.text-sm{font-size:.875rem}
-.text-lg{font-size:1.125rem}.text-xl{font-size:1.25rem}.text-5xl{font-size:3rem;line-height:1}
-.font-bold{font-weight:700}
-/* High-contrast colors (brightened for legibility) */
-.text-slate-300{color:#e2e8f0}.text-slate-400{color:#cbd5e1}.text-slate-500{color:#94a3b8}
-.text-red-400{color:#f87171}.text-emerald-400{color:#34d399}.text-pink-400{color:#f472b6}
-.text-amber-300{color:#fcd34d}.text-amber-400{color:#fbbf24}
-.text-sky-400{color:#38bdf8}
-.border-slate-600{border-color:#475569}.border-slate-700{border-color:#334155}
-.border-b{border-bottom:1px solid #334155}.border-t{border-top:1px solid #334155}
-/* Base look & feel (independent of Tailwind) */
-html,body{margin:0;padding:0;background:#0f172a;color:#f1f5f9}
-body{-webkit-text-size-adjust:100%}
-input,select{box-sizing:border-box;outline:none}
-input:focus,select:focus{border-color:#ec4899}
-.btn{border:none;display:inline-block}
-button{font-family:inherit}
-.card{box-sizing:border-box}
-/* table row highlight for low stock */
-.low td{background:#450a0a!important;color:#fecaca}
-</style>
 <style>
 *{font-family:Vazirmatn,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:#0f172a;color:#e2e8f0}
@@ -72,7 +27,7 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 #scanModal{position:fixed;inset:0;background:rgba(2,6,23,.92);z-index:50;display:flex;align-items:center;justify-content:center;padding:1rem}
 #scanModal .box{background:#1e293b;border:1px solid #334155;border-radius:1rem;width:100%;max-width:420px;padding:1rem}
 #reader{max-width:100%;border-radius:.5rem;overflow:hidden}
-#reader video,#reader img,#reader canvas{width:100%!important;max-width:100%!important;max-height:260px;height:auto;object-fit:contain;border-radius:.5rem;background:#0f172a}
+#reader video{width:100%!important;border-radius:.5rem}
 .toast{position:fixed;bottom:1rem;right:50%;transform:translateX(50%);background:#059669;color:#fff;padding:.6rem 1.2rem;border-radius:.75rem;z-index:60;font-weight:600}
 .badge{font-size:.7rem;padding:.15rem .55rem;border-radius:999px}
 .role-admin{background:#7c3aed}.role-seller{background:#0284c7}.role-acc{background:#d97706}
@@ -82,20 +37,20 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 <!-- LOGIN -->
 <div id="loginView" class="flex items-center justify-center min-h-screen p-4">
  <div class="card p-6 w-full max-w-sm text-center">
-  <div class="mb-3 flex justify-center"><img id="loginLogo" src="icons/easy-store-logo.png" alt="لوگو" class="w-16 h-16 object-contain rounded-xl shadow-sm"></div>
-  <h1 id="loginStoreName" class="text-xl font-bold mb-1">فروشگاه آسان</h1>
+  <div class="text-5xl mb-2">💄</div>
+  <h1 class="text-xl font-bold mb-1">آرایشی بهداشتی</h1>
   <p class="text-xs text-slate-400 mb-4">صندوق فروش، انبار و حسابداری</p>
-  <input id="liUser" placeholder="نام کاربری" class="mb-3">
+  <input id="liUser" placeholder="نام کاربری (admin / seller / acc)" class="mb-3">
   <input id="liPass" type="password" placeholder="رمز عبور" class="mb-4" onkeydown="if(event.key==='Enter')doLogin()">
   <button class="btn btn-p w-full" onclick="doLogin()">ورود</button>
   <p id="liErr" class="text-red-400 text-sm mt-2"></p>
-  
+  <p class="text-[11px] text-slate-500 mt-4">admin/1234 — seller/1111 — acc/2222</p>
  </div>
 </div>
 <!-- APP -->
 <div id="appView" class="hidden max-w-3xl mx-auto p-3 pb-24">
  <div class="flex items-center justify-between my-2 flex-wrap gap-2">
-  <div class="flex items-center gap-2"><img id="headerLogo" src="icons/easy-store-logo.png" alt="لوگو" class="w-7 h-7 object-contain rounded"><span id="headerStoreName" class="font-bold">فروشگاه آسان</span></div>
+  <span class="font-bold">آرایشی بهداشتی</span>
   <div class="flex gap-2 items-center text-sm">
    <span id="whoami" class="badge role-admin"></span>
    <span id="todayJ" class="text-xs text-slate-400"></span>
@@ -110,21 +65,6 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 <script>
 /* ================= ذخیره‌سازی مقاوم (هرگز داده از دست نمی‌رود) ================= */
 const LS={p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings'};
-
-function applyStoreBranding(){
- const name = (settings && settings.store_name) ? settings.store_name : 'فروشگاه آسان';
- const logo = (settings && settings.store_logo) ? settings.store_logo : 'icons/easy-store-logo.png';
- const elLoginName = document.getElementById('loginStoreName');
- if(elLoginName) elLoginName.textContent = name;
- const elHeaderName = document.getElementById('headerStoreName');
- if(elHeaderName) elHeaderName.textContent = name;
- const elLoginLogo = document.getElementById('loginLogo');
- if(elLoginLogo) elLoginLogo.src = logo;
- const elHeaderLogo = document.getElementById('headerLogo');
- if(elHeaderLogo) elHeaderLogo.src = logo;
- document.title = name + ' — صندوق و حسابداری';
-}
-
 function lsGet(k,d){
  try{const raw=localStorage.getItem(k);if(raw==null)return d;const v=JSON.parse(raw);return v??d;}
  catch(e){console.error('localStorage read failed',k,e);return d;}
@@ -163,7 +103,7 @@ let products=migrateProducts(lsGet(LS.p,null));
 if(!products||!products.length){products=migrateProducts(SEED.map(r=>({barcode:r[0],name:r[1],brand:r[2],category:r[3],purchase_price:r[4],sale_price:r[5],vat_percent:r[6],stock:r[7]})));lsSet(LS.p,products);}
 let invoices=lsGet(LS.i,[]);if(!Array.isArray(invoices))invoices=[];
 let expenses=lsGet(LS.e,[]);if(!Array.isArray(expenses))expenses=[];
-let settings=Object.assign({income_tax_percent:15,operating_expense_monthly:0,store_name:'فروشگاه آسان',store_address:'',store_phone:'',store_logo:''},lsGet(LS.s,{}));
+let settings=Object.assign({income_tax_percent:15,operating_expense_monthly:0},lsGet(LS.s,{}));
 let cart=[], user=null;
 
 const fmt=n=>Number(n||0).toLocaleString('fa-IR');
@@ -214,84 +154,8 @@ function setTab(k){curTab=k;renderTabs();renderTab();}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 </script>
 <script>
-/* ================= اسکنر بارکد — مودال مطمئن (دوربین + گالری + BarcodeDetector) ================= */
+/* ================= اسکنر بارکد — مودال مطمئن (دوربین + گالری) ================= */
 let html5QrCode=null,scanCb=null;
-const H5_FORMATS=[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.CODE_128,
- Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
- Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.ITF,Html5QrcodeSupportedFormats.CODABAR];
-/* BarcodeDetector (سخت‌افزاری و سریع در کروم اندروید) — همه فرمت‌های 1D */
-const BD_FORMATS=['ean_13','ean_8','code_128','code_39','upc_a','upc_e','qr_code','itf','codabar'];
-function bdSupported(){return 'BarcodeDetector' in window;}
-async function bdDetect(source){
- try{
-  if(!bdSupported())return null;
-  let det;
-  try{det=await window.BarcodeDetector.getDetector?null:new window.BarcodeDetector({formats:BD_FORMATS});}
-  catch(e){det=new window.BarcodeDetector();}
-  if(!det)det=new window.BarcodeDetector();
-  const codes=await det.detect(source);
-  if(codes&&codes.length)return String(codes[0].rawValue||'').trim();
- }catch(e){console.warn('BarcodeDetector failed',e);}
- return null;
-}
-/* تبدیل هر منبع تصویری به canvas با حداکثر بُعد مشخص (برای جلوگیری از سرریز تصویر بزرگ گالری) */
-function toCanvas(source,maxDim){
- let w=source.naturalWidth||source.videoWidth||source.width;
- let h=source.naturalHeight||source.videoHeight||source.height;
- if(!w||!h)return null;
- const scale=Math.min(1,maxDim/Math.max(w,h));
- const cv=document.createElement('canvas');
- cv.width=Math.round(w*scale);cv.height=Math.round(h*scale);
- const ctx=cv.getContext('2d');
- ctx.drawImage(source,0,0,cv.width,cv.height);
- return cv;
-}
-/* افزایش کنتراست (تصاویر کم‌کیفیت/کم‌نور موبایل) */
-function boostContrast(cv){
- const ctx=cv.getContext('2d');
- const d=ctx.getImageData(0,0,cv.width,cv.height);
- const a=d.data,f=1.6,off=(1-f)*128;
- for(let i=0;i<a.length;i+=4){a[i]=Math.max(0,Math.min(255,a[i]*f+off));a[i+1]=Math.max(0,Math.min(255,a[i+1]*f+off));a[i+2]=Math.max(0,Math.min(255,a[i+2]*f+off));}
- ctx.putImageData(d,0,0);
- return cv;
-}
-/* چرخش ۹۰ درجه (بارکدهای عمودی که با دوربین موبایل گرفته شده‌اند) */
-function rotate90(cv){
- const out=document.createElement('canvas');
- out.width=cv.height;out.height=cv.width;
- const ctx=out.getContext('2d');
- ctx.translate(out.width/2,out.height/2);
- ctx.rotate(Math.PI/2);
- ctx.drawImage(cv,-cv.width/2,-cv.height/2);
- return out;
-}
-/* پایپ‌لاین کامل گالری: BarcodeDetector → downscale+H5 → چرخش ۹۰° → کنتراست → چرخش+کنتراست */
-async function detectFromImageFile(file,previewEl){
- const url=URL.createObjectURL(file);
- const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
- if(previewEl){previewEl.innerHTML='';img.style.maxWidth='100%';img.style.maxHeight='260px';img.style.objectFit='contain';previewEl.appendChild(img);}
- let code=await bdDetect(img);
- if(code){URL.revokeObjectURL(url);return code;}
- // مرحله ۲: کوچک‌سازی (max 1200px) و اسکن با Html5Qrcode
- const base=toCanvas(img,1200);
- URL.revokeObjectURL(url);
- if(!base)throw new Error('no image');
- const variants=[base,boostContrast(toCanvas(img,1200)),rotate90(base),rotate90(boostContrast(toCanvas(img,1200)))];
- const blobOf=cv=>new Promise(r=>cv.toBlob(r,'image/png'));
- for(const cv of variants){
-  if(!cv)continue;
-  try{
-   const blob=await blobOf(cv);
-   const tmp=new Html5Qrcode('reader',{formatsToSupport:H5_FORMATS,showImage:false});
-   const txt=await tmp.scanFile(new File([blob],'x.png',{type:'image/png'}),false);
-   try{tmp.clear()}catch(e){}
-   if(txt)return String(txt).trim();
-  }catch(e){/* ادامه با واریانت بعدی */}
- }
- // مرحله آخر: BarcodeDetector روی واریانت‌ها
- for(const cv of variants){const c2=await bdDetect(cv);if(c2)return c2;}
- return null;
-}
 function openScanModal(cb){
  scanCb=cb;stopScan();
  const m=document.getElementById('scanModal');
@@ -301,31 +165,21 @@ function openScanModal(cb){
   <div id="reader" class="mb-2"></div>
   <label class="btn btn-a w-full block text-center mb-2">📷 انتخاب تصویر از گالری
    <input type="file" accept="image/*" class="hidden" onchange="scanFromFile(this)"></label>
-  <div id="scanStatus" class="text-xs text-slate-400 mb-1"></div>
   <button class="btn btn-s w-full" onclick="closeScanModal()">بستن</button>
   <p id="scanErr" class="text-red-400 text-xs mt-2"></p>
  </div>`;
  if(typeof Html5Qrcode==='undefined'){
-  document.getElementById('scanErr').textContent='کتابخانه اسکنر بارگذاری نشده؛ بارکد را دستی وارد کنید.';return;
+  document.getElementById('scanErr').textContent='کتابخانه اسکنر بارگذاری نشده؛ از گالری استفاده کنید یا بارکد را دستی وارد کنید.';return;
  }
- html5QrCode=new Html5Qrcode("reader",{formatsToSupport:H5_FORMATS});
+ html5QrCode=new Html5Qrcode("reader",{formatsToSupport:[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.QR_CODE]});
  html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:140},aspectRatio:1.333},txt=>onDecoded(txt),()=>{})
  .catch(e=>{document.getElementById('scanErr').textContent='دسترسی به دوربین ممکن نشد: '+(e&&e.message?e.message:e)+' — از گالری استفاده کنید.';});
 }
-async function scanFromFile(input){
+function scanFromFile(input){
  if(!input.files||!input.files[0])return;
  const f=input.files[0];
- const err=document.getElementById('scanErr'),st=document.getElementById('scanStatus');
- if(err)err.textContent='';if(st)st.textContent='در حال تحلیل تصویر...';
- try{
-  const code=await detectFromImageFile(f,document.getElementById('reader'));
-  if(st)st.textContent='';
-  if(code)onDecoded(code);
-  else if(err)err.textContent='بارکد در تصویر یافت نشد؛ عکس نزدیک‌تر/واضح‌تر بگیرید یا بارکد را دستی وارد کنید.';
- }catch(e){
-  if(st)st.textContent='';
-  if(err)err.textContent='خطا در پردازش تصویر؛ عکس دیگری انتخاب کنید.';
- }
+ const r=new Html5Qrcode("reader");
+ r.scanFile(f,true).then(txt=>onDecoded(txt)).catch(()=>{document.getElementById('scanErr').textContent='بارکد در تصویر یافت نشد؛ تصویر واضح‌تری انتخاب کنید.';});
 }
 function onDecoded(txt){
  txt=String(txt).trim();closeScanModal();
@@ -337,7 +191,6 @@ function closeScanModal(){
 }
 function stopScan(){closeScanModal();}
 window.addEventListener('beforeunload',()=>{if(html5QrCode)try{html5QrCode.stop()}catch(e){}});
-
 </script>
 <script>
 /* ================= محصولات ================= */
@@ -407,20 +260,9 @@ function saveProduct(){
  lsSet(LS.p,products);clearForm();toast('ذخیره شد');renderProducts();
 }
 function scanForProduct(){openScanModal(code=>{
+ const p=products.find(x=>x.barcode===code);
  if(curTab!=='products')setTab('products');
- setTimeout(()=>{
-  const el=document.getElementById('pBarcode');if(el)el.value=code;
-  const p=products.find(x=>x.barcode===code);
-  if(p){
-   alert('این محصول از قبل موجود است');
-   fillForm(p);window.scrollTo({top:0,behavior:'smooth'});
-   toast('محصول موجود: '+p.name);
-  }else{
-   toast('بارکد تشخیص داده شد: '+code,false);
-   const nm=document.getElementById('pName');
-   if(nm){nm.focus();if(nm.scrollIntoView)nm.scrollIntoView({behavior:'smooth',block:'center'});}
-  }
- },60);
+ setTimeout(()=>{if(p){fillForm(p);toast('محصول موجود: '+p.name);}else{document.getElementById('pBarcode').value=code;toast('بارکد جدید — اطلاعات را تکمیل کنید',false);}window.scrollTo({top:0,behavior:'smooth'});},60);
 });}
 </script>
 <script>
@@ -642,49 +484,7 @@ function delExpense(i){expenses.splice(i,1);lsSet(LS.e,expenses);renderExpenses(
 /* ================= تنظیمات ================= */
 function renderSettings(){
  const c=document.getElementById('content');
- const isAdmin = (user && user.username === 'admin');
- const logoSrc = (settings.store_logo || 'icons/easy-store-logo.png');
- let storeSettingsHtml = '';
- if(isAdmin){
-  storeSettingsHtml = `
- <div class="card p-3 mb-3">
-  <h3 class="font-bold mb-2 flex items-center gap-2"><span>🏪</span>تنظیمات فروشگاه (فقط مدیر)</h3>
-  <div class="space-y-3">
-   <div>
-    <label class="text-xs block mb-1">نام فروشگاه</label>
-    <input id="stStoreName" class="w-full" value="${(settings.store_name || 'فروشگاه آسان').replace(/"/g, '&quot;')}">
-   </div>
-   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-    <div>
-     <label class="text-xs block mb-1">شماره تماس (اختیاری)</label>
-     <input id="stStorePhone" class="w-full" placeholder="مثال: 09123456789" value="${(settings.store_phone || '').replace(/"/g, '&quot;')}">
-    </div>
-    <div>
-     <label class="text-xs block mb-1">آدرس فروشگاه (اختیاری)</label>
-     <input id="stStoreAddress" class="w-full" placeholder="مثال: خیابان اصلی، پلاک ۱۰" value="${(settings.store_address || '').replace(/"/g, '&quot;')}">
-    </div>
-   </div>
-   <div class="pt-2 border-t border-slate-700">
-    <label class="text-xs block mb-2 font-bold">لوگوی فروشگاه</label>
-    <div class="flex items-center gap-4 flex-wrap">
-     <div class="w-20 h-20 bg-slate-800 rounded-lg flex items-center justify-center p-2 border border-slate-700">
-      <img id="stLogoPreview" src="${logoSrc}" alt="پیش‌نمایش لوگو" class="max-w-full max-h-full object-contain">
-     </div>
-     <div class="flex-1 min-w-[200px] flex flex-col gap-2">
-      <label class="btn btn-s text-center cursor-pointer">
-       <span>انتخاب تصویر لوگو جدید</span>
-       <input type="file" id="stLogoInput" accept="image/*" class="hidden" onchange="previewCustomLogo(this)">
-      </label>
-      <button type="button" class="btn btn-d text-xs" onclick="resetStoreLogo()">بازنشانی به لوگوی پیش‌فرض</button>
-     </div>
-    </div>
-   </div>
-  </div>
-  <button class="btn btn-p w-full mt-3" onclick="saveStoreSettings()">ذخیره مشخصات فروشگاه</button>
- </div>`;
- }
-
- c.innerHTML= storeSettingsHtml + `
+ c.innerHTML=`
  <div class="card p-3 mb-3"><h3 class="font-bold mb-2">تنظیمات مالی</h3>
   <div class="grid grid-cols-2 gap-2">
    <div><label class="text-xs">نرخ مالیات عملکرد % (15 تا 20)</label>
@@ -701,53 +501,7 @@ function renderSettings(){
  <div class="card p-3"><h3 class="font-bold mb-2 text-red-400">منطقه خطر</h3>
   <button class="btn btn-d w-full" onclick="resetAll()">پاک‌کردن همه داده‌ها</button></div>`;
 }
-
-let tempCustomLogo = null;
-function previewCustomLogo(input){
- if(!input.files || !input.files[0]) return;
- const file = input.files[0];
- if(!file.type.startsWith('image/')){
-  toast('لطفاً یک فایل تصویری انتخاب کنید', false);
-  return;
- }
- const reader = new FileReader();
- reader.onload = function(e){
-  tempCustomLogo = e.target.result;
-  const prev = document.getElementById('stLogoPreview');
-  if(prev) prev.src = tempCustomLogo;
-  toast('تصویر بارگذاری شد، برای اعمال دکمه ذخیره را بزنید');
- };
- reader.readAsDataURL(file);
-}
-
-function resetStoreLogo(){
- tempCustomLogo = '';
- const prev = document.getElementById('stLogoPreview');
- if(prev) prev.src = 'icons/easy-store-logo.png';
- toast('لوگو به حالت پیش‌فرض برگشت؛ دکمه ذخیره را بزنید');
-}
-
-function saveStoreSettings(){
- const nameInput = document.getElementById('stStoreName');
- if(!nameInput) return;
- const nameVal = nameInput.value.trim();
- if(!nameVal){
-  toast('نام فروشگاه نمی‌تواند خالی باشد', false);
-  return;
- }
- settings.store_name = nameVal;
- settings.store_phone = (document.getElementById('stStorePhone')?.value || '').trim();
- settings.store_address = (document.getElementById('stStoreAddress')?.value || '').trim();
- if(tempCustomLogo !== null){
-  settings.store_logo = tempCustomLogo;
- }
- lsSet(LS.s, settings);
- applyStoreBranding();
- toast('تنظیمات فروشگاه با موفقیت ذخیره شد');
-}
-
 function saveSettings(){
-
  const t=+document.getElementById('stTax').value;
  if(isNaN(t)||t<0||t>100){toast('نرخ مالیات نامعتبر است',false);return;}
  settings.income_tax_percent=t;lsSet(LS.s,settings);toast('تنظیمات ذخیره شد');
@@ -766,7 +520,7 @@ function importBackup(input){
    if(!Array.isArray(d.products)||!Array.isArray(d.invoices))throw new Error('bad');
    products=migrateProducts(d.products);invoices=d.invoices;
    expenses=Array.isArray(d.expenses)?d.expenses:[];
-   if(d.settings){settings=Object.assign(settings,d.settings);applyStoreBranding();}
+   if(d.settings)settings=Object.assign(settings,d.settings);
    lsSet(LS.p,products);lsSet(LS.i,invoices);lsSet(LS.e,expenses);lsSet(LS.s,settings);
    toast('بازیابی انجام شد');renderSettings();
  }catch(e){toast('فایل پشتیبان معتبر نیست',false);}};
