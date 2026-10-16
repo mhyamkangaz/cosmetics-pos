@@ -214,130 +214,415 @@ function setTab(k){curTab=k;renderTabs();renderTab();}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 </script>
 <script>
-/* ================= اسکنر بارکد — مودال مطمئن (دوربین + گالری + BarcodeDetector) ================= */
-let html5QrCode=null,scanCb=null;
-const H5_FORMATS=[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.CODE_128,
- Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
- Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.ITF,Html5QrcodeSupportedFormats.CODABAR];
-/* BarcodeDetector (سخت‌افزاری و سریع در کروم اندروید) — همه فرمت‌های 1D */
-const BD_FORMATS=['ean_13','ean_8','code_128','code_39','upc_a','upc_e','qr_code','itf','codabar'];
-function bdSupported(){return 'BarcodeDetector' in window;}
-async function bdDetect(source){
- try{
-  if(!bdSupported())return null;
-  let det;
-  try{det=await window.BarcodeDetector.getDetector?null:new window.BarcodeDetector({formats:BD_FORMATS});}
-  catch(e){det=new window.BarcodeDetector();}
-  if(!det)det=new window.BarcodeDetector();
-  const codes=await det.detect(source);
-  if(codes&&codes.length)return String(codes[0].rawValue||'').trim();
- }catch(e){console.warn('BarcodeDetector failed',e);}
- return null;
-}
-/* تبدیل هر منبع تصویری به canvas با حداکثر بُعد مشخص (برای جلوگیری از سرریز تصویر بزرگ گالری) */
-function toCanvas(source,maxDim){
- let w=source.naturalWidth||source.videoWidth||source.width;
- let h=source.naturalHeight||source.videoHeight||source.height;
- if(!w||!h)return null;
- const scale=Math.min(1,maxDim/Math.max(w,h));
- const cv=document.createElement('canvas');
- cv.width=Math.round(w*scale);cv.height=Math.round(h*scale);
- const ctx=cv.getContext('2d');
- ctx.drawImage(source,0,0,cv.width,cv.height);
- return cv;
-}
-/* افزایش کنتراست (تصاویر کم‌کیفیت/کم‌نور موبایل) */
-function boostContrast(cv){
- const ctx=cv.getContext('2d');
- const d=ctx.getImageData(0,0,cv.width,cv.height);
- const a=d.data,f=1.6,off=(1-f)*128;
- for(let i=0;i<a.length;i+=4){a[i]=Math.max(0,Math.min(255,a[i]*f+off));a[i+1]=Math.max(0,Math.min(255,a[i+1]*f+off));a[i+2]=Math.max(0,Math.min(255,a[i+2]*f+off));}
- ctx.putImageData(d,0,0);
- return cv;
-}
-/* چرخش ۹۰ درجه (بارکدهای عمودی که با دوربین موبایل گرفته شده‌اند) */
-function rotate90(cv){
- const out=document.createElement('canvas');
- out.width=cv.height;out.height=cv.width;
- const ctx=out.getContext('2d');
- ctx.translate(out.width/2,out.height/2);
- ctx.rotate(Math.PI/2);
- ctx.drawImage(cv,-cv.width/2,-cv.height/2);
- return out;
-}
-/* پایپ‌لاین کامل گالری: BarcodeDetector → downscale+H5 → چرخش ۹۰° → کنتراست → چرخش+کنتراست */
-async function detectFromImageFile(file,previewEl){
- const url=URL.createObjectURL(file);
- const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
- if(previewEl){previewEl.innerHTML='';img.style.maxWidth='100%';img.style.maxHeight='260px';img.style.objectFit='contain';previewEl.appendChild(img);}
- let code=await bdDetect(img);
- if(code){URL.revokeObjectURL(url);return code;}
- // مرحله ۲: کوچک‌سازی (max 1200px) و اسکن با Html5Qrcode
- const base=toCanvas(img,1200);
- URL.revokeObjectURL(url);
- if(!base)throw new Error('no image');
- const variants=[base,boostContrast(toCanvas(img,1200)),rotate90(base),rotate90(boostContrast(toCanvas(img,1200)))];
- const blobOf=cv=>new Promise(r=>cv.toBlob(r,'image/png'));
- for(const cv of variants){
-  if(!cv)continue;
-  try{
-   const blob=await blobOf(cv);
-   const tmp=new Html5Qrcode('reader',{formatsToSupport:H5_FORMATS,showImage:false});
-   const txt=await tmp.scanFile(new File([blob],'x.png',{type:'image/png'}),false);
-   try{tmp.clear()}catch(e){}
-   if(txt)return String(txt).trim();
-  }catch(e){/* ادامه با واریانت بعدی */}
- }
- // مرحله آخر: BarcodeDetector روی واریانت‌ها
- for(const cv of variants){const c2=await bdDetect(cv);if(c2)return c2;}
- return null;
-}
-function openScanModal(cb){
- scanCb=cb;stopScan();
- const m=document.getElementById('scanModal');
- m.classList.remove('hidden');
- m.innerHTML=`<div class="box">
-  <h3 class="font-bold mb-2">اسکن بارکد</h3>
-  <div id="reader" class="mb-2"></div>
-  <label class="btn btn-a w-full block text-center mb-2">📷 انتخاب تصویر از گالری
-   <input type="file" accept="image/*" class="hidden" onchange="scanFromFile(this)"></label>
-  <div id="scanStatus" class="text-xs text-slate-400 mb-1"></div>
-  <button class="btn btn-s w-full" onclick="closeScanModal()">بستن</button>
-  <p id="scanErr" class="text-red-400 text-xs mt-2"></p>
- </div>`;
- if(typeof Html5Qrcode==='undefined'){
-  document.getElementById('scanErr').textContent='کتابخانه اسکنر بارگذاری نشده؛ بارکد را دستی وارد کنید.';return;
- }
- html5QrCode=new Html5Qrcode("reader",{formatsToSupport:H5_FORMATS});
- html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:140},aspectRatio:1.333},txt=>onDecoded(txt),()=>{})
- .catch(e=>{document.getElementById('scanErr').textContent='دسترسی به دوربین ممکن نشد: '+(e&&e.message?e.message:e)+' — از گالری استفاده کنید.';});
-}
-async function scanFromFile(input){
- if(!input.files||!input.files[0])return;
- const f=input.files[0];
- const err=document.getElementById('scanErr'),st=document.getElementById('scanStatus');
- if(err)err.textContent='';if(st)st.textContent='در حال تحلیل تصویر...';
- try{
-  const code=await detectFromImageFile(f,document.getElementById('reader'));
-  if(st)st.textContent='';
-  if(code)onDecoded(code);
-  else if(err)err.textContent='بارکد در تصویر یافت نشد؛ عکس نزدیک‌تر/واضح‌تر بگیرید یا بارکد را دستی وارد کنید.';
- }catch(e){
-  if(st)st.textContent='';
-  if(err)err.textContent='خطا در پردازش تصویر؛ عکس دیگری انتخاب کنید.';
- }
-}
-function onDecoded(txt){
- txt=String(txt).trim();closeScanModal();
- if(scanCb)scanCb(txt);
-}
-function closeScanModal(){
- if(html5QrCode){try{html5QrCode.stop().then(()=>{try{html5QrCode.clear()}catch(e){}}).catch(()=>{});}catch(e){} html5QrCode=null;}
- const m=document.getElementById('scanModal');m.classList.add('hidden');m.innerHTML='';
-}
-function stopScan(){closeScanModal();}
-window.addEventListener('beforeunload',()=>{if(html5QrCode)try{html5QrCode.stop()}catch(e){}});
+/* ================= اسکنر پیشرفته بارکد (راج‌مان گروپ + چند مرحله‌ای + تحلیل هوشمند) ================= */
+let html5QrCode = null, scanCb = null;
 
+const H5_FORMATS = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.CODABAR,
+  Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.DATA_MATRIX,
+  Html5QrcodeSupportedFormats.AZTEC,
+  Html5QrcodeSupportedFormats.PDF_417
+];
+
+const BD_FORMATS = [
+  'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'codabar', 'itf',
+  'qr_code', 'data_matrix', 'aztec', 'pdf417'
+];
+
+let bdDetectorInstance = null;
+
+async function getBarcodeDetector() {
+  if (!('BarcodeDetector' in window)) return null;
+  if (bdDetectorInstance) return bdDetectorInstance;
+  try {
+    let supported = BD_FORMATS;
+    if (typeof window.BarcodeDetector.getSupportedFormats === 'function') {
+      const avail = await window.BarcodeDetector.getSupportedFormats();
+      if (Array.isArray(avail) && avail.length > 0) {
+        supported = BD_FORMATS.filter(f => avail.includes(f));
+      }
+    }
+    bdDetectorInstance = new window.BarcodeDetector({ formats: supported.length ? supported : BD_FORMATS });
+  } catch (e) {
+    try { bdDetectorInstance = new window.BarcodeDetector(); } catch (err) { bdDetectorInstance = null; }
+  }
+  return bdDetectorInstance;
+}
+
+async function bdDetect(source) {
+  try {
+    const det = await getBarcodeDetector();
+    if (!det) return null;
+    const codes = await det.detect(source);
+    if (codes && codes.length > 0) {
+      const val = String(codes[0].rawValue || '').trim();
+      if (val) return val;
+    }
+  } catch (e) {}
+  return null;
+}
+
+/* تبدیل هر منبع تصویری به canvas با حداکثر ابعاد مشخص */
+function toCanvas(source, maxDim = 1200) {
+  const w = source.naturalWidth || source.videoWidth || source.width;
+  const h = source.naturalHeight || source.videoHeight || source.height;
+  if (!w || !h) return null;
+  const scale = Math.min(1, maxDim / Math.max(w, h));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(w * scale);
+  cv.height = Math.round(h * scale);
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(source, 0, 0, cv.width, cv.height);
+  return cv;
+}
+
+/* برش نواحی پرکاربرد بارکد */
+function cropCanvas(cv, type) {
+  const w = cv.width, h = cv.height;
+  let sx = 0, sy = 0, sw = w, sh = h;
+  if (type === 'center70') {
+    sw = Math.round(w * 0.7);
+    sh = Math.round(h * 0.7);
+    sx = Math.round((w - sw) / 2);
+    sy = Math.round((h - sh) / 2);
+  } else if (type === 'bottom50') {
+    sw = w;
+    sh = Math.round(h * 0.5);
+    sx = 0;
+    sy = Math.round(h * 0.5);
+  } else if (type === 'middleStripe') {
+    sw = w;
+    sh = Math.round(h * 0.35);
+    sx = 0;
+    sy = Math.round((h - sh) / 2);
+  }
+  const out = document.createElement('canvas');
+  out.width = sw;
+  out.height = sh;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh);
+  return out;
+}
+
+/* چرخش تصویر به زاویه‌های مختلف (0, 90, 180, 270) */
+function rotateCanvas(cv, deg) {
+  if (deg === 0) return cv;
+  const out = document.createElement('canvas');
+  const rad = (deg * Math.PI) / 180;
+  if (deg === 90 || deg === 270) {
+    out.width = cv.height;
+    out.height = cv.width;
+  } else {
+    out.width = cv.width;
+    out.height = cv.height;
+  }
+  const ctx = out.getContext('2d');
+  ctx.translate(out.width / 2, out.height / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(cv, -cv.width / 2, -cv.height / 2);
+  return out;
+}
+
+/* بهبود کنتراست و تبدیل به خاکستری */
+function enhanceContrastAndGray(cv) {
+  const out = document.createElement('canvas');
+  out.width = cv.width;
+  out.height = cv.height;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(cv, 0, 0);
+  const imgData = ctx.getImageData(0, 0, out.width, out.height);
+  const d = imgData.data;
+  const factor = 1.7;
+  const offset = (1 - factor) * 128;
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    const adj = Math.max(0, Math.min(255, gray * factor + offset));
+    d[i] = adj;
+    d[i + 1] = adj;
+    d[i + 2] = adj;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return out;
+}
+
+const canvasToBlob = cv => new Promise(resolve => cv.toBlob(resolve, 'image/png'));
+
+/* پایپ‌لاین تحلیلی چندمرحله‌ای (Multi-Pass Engine) */
+async function runMultiPassDetection(sourceCanvas, onProgress) {
+  if (!sourceCanvas) return null;
+  const crops = [
+    { name: 'full', cv: sourceCanvas },
+    { name: 'center70', cv: cropCanvas(sourceCanvas, 'center70') },
+    { name: 'bottom50', cv: cropCanvas(sourceCanvas, 'bottom50') },
+    { name: 'middleStripe', cv: cropCanvas(sourceCanvas, 'middleStripe') }
+  ];
+
+  // فاز اول: تست سریع با بارکد دیتکتور بومی روی نواحی مختلف
+  for (const c of crops) {
+    if (onProgress) onProgress('در حال بررسی سریع ' + c.name + '...');
+    const code = await bdDetect(c.cv);
+    if (code) return code;
+  }
+
+  // فاز دوم: ایجاد واریانت‌های چرخش و فیلتر کنتراست
+  const candidates = [];
+  for (const c of crops) {
+    const base = c.cv;
+    const enhanced = enhanceContrastAndGray(base);
+    candidates.push(base);
+    candidates.push(enhanced);
+    candidates.push(rotateCanvas(base, 90));
+    candidates.push(rotateCanvas(base, 180));
+    candidates.push(rotateCanvas(base, 270));
+    candidates.push(rotateCanvas(enhanced, 90));
+  }
+
+  // فاز سوم: تست BarcodeDetector روی واریانت‌ها
+  for (let i = 0; i < candidates.length; i++) {
+    const cv = candidates[i];
+    const code = await bdDetect(cv);
+    if (code) return code;
+  }
+
+  // فاز چهارم: استفاده از Html5Qrcode روی فایل‌های Blob کاندیدا
+  if (typeof Html5Qrcode !== 'undefined') {
+    const tmp = new Html5Qrcode('reader-hidden-tmp', { formatsToSupport: H5_FORMATS, verbose: false });
+    try {
+      for (let i = 0; i < candidates.length; i++) {
+        if (onProgress && i % 3 === 0) {
+          onProgress(`تحلیل عمیق بارکد (مرحله ${i + 1} از ${candidates.length})...`);
+        }
+        try {
+          const blob = await canvasToBlob(candidates[i]);
+          if (!blob) continue;
+          const file = new File([blob], 'candidate.png', { type: 'image/png' });
+          const res = await tmp.scanFile(file, false);
+          if (res && String(res).trim()) {
+            try { tmp.clear(); } catch (e) {}
+            return String(res).trim();
+          }
+        } catch (scanErr) {
+          // ادامه روی کاندیدای بعدی
+        }
+      }
+    } finally {
+      try { tmp.clear(); } catch (e) {}
+    }
+  }
+
+  return null;
+}
+
+function openScanModal(cb) {
+  scanCb = cb;
+  stopScan();
+  const m = document.getElementById('scanModal');
+  m.classList.remove('hidden');
+  m.innerHTML = `
+    <div class="box max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-2 pb-1 border-b border-slate-700">
+        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1">
+          <span>🔍</span> اسکن و بازشناسی بارکد
+        </h3>
+        <button class="text-slate-400 hover:text-white px-2 py-1 text-xs" onclick="closeScanModal()">✕ بستن</button>
+      </div>
+
+      <!-- راهنمای کادر و نمای زنده دوربین -->
+      <div class="relative bg-black rounded-lg overflow-hidden mb-2 border border-slate-700">
+        <div id="reader" style="width:100%; min-height:220px;"></div>
+        <div id="reader-hidden-tmp" class="hidden"></div>
+      </div>
+
+      <!-- دکمه عکسبرداری زنده و تحلیل فریم -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+        <button id="btnCaptureAnalyze" type="button" class="btn btn-p text-xs py-2 w-full font-bold flex items-center justify-center gap-1 shadow-md hover:brightness-110" onclick="captureAndAnalyzeFrame()">
+          📸 گرفتن عکس و تحلیل بارکد
+        </button>
+        <label class="btn btn-a text-xs py-2 w-full font-bold flex items-center justify-center gap-1 cursor-pointer shadow-md">
+          📷 انتخاب تصویر از گالری
+          <input type="file" accept="image/*" class="hidden" onchange="scanFromFile(this)">
+        </label>
+      </div>
+
+      <!-- وضعیت تحلیل و خطاها -->
+      <div id="scanStatus" class="text-xs text-sky-400 font-medium mb-1 min-h-[1.2rem] text-center"></div>
+      <p id="scanErr" class="text-rose-400 text-xs mb-2 text-center"></p>
+
+      <!-- ثبت دستی بارکد در صورت مخدوش بودن -->
+      <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/80 mb-2">
+        <div class="text-[11px] text-slate-300 mb-1.5 font-medium">✏️ در صورت مخدوش بودن بارکد، دستی وارد کنید:</div>
+        <div class="flex gap-2">
+          <input id="manualBarcodeModalInput" type="text" placeholder="کد بارکد..." class="flex-1 text-xs py-1.5 px-2 bg-slate-800 border border-slate-600 rounded text-slate-100 placeholder-slate-400" onkeydown="if(event.key==='Enter')submitManualBarcodeFromModal()">
+          <button type="button" class="btn btn-s text-xs px-3 py-1.5 whitespace-nowrap bg-emerald-700 hover:bg-emerald-600 text-white" onclick="submitManualBarcodeFromModal()">ثبت و تایید</button>
+        </div>
+      </div>
+
+      <button class="btn btn-s w-full text-xs py-1.5" onclick="closeScanModal()">انصراف و بستن</button>
+    </div>
+  `;
+
+  if (typeof Html5Qrcode === 'undefined') {
+    const err = document.getElementById('scanErr');
+    if (err) err.textContent = 'کتابخانه اسکنر بارگذاری نشده؛ بارکد را از کادر بالا دستی وارد کنید.';
+    return;
+  }
+
+  html5QrCode = new Html5Qrcode("reader", {
+    formatsToSupport: H5_FORMATS,
+    verbose: false
+  });
+
+  const config = {
+    fps: 15,
+    qrbox: (viewfinderWidth, viewfinderHeight) => {
+      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+      const w = Math.min(320, Math.floor(minEdge * 0.85));
+      const h = Math.min(180, Math.floor(w * 0.65));
+      return { width: w, height: h };
+    },
+    aspectRatio: 1.333333
+  };
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    config,
+    txt => onDecoded(txt),
+    () => {}
+  ).catch(e => {
+    const err = document.getElementById('scanErr');
+    if (err) {
+      err.textContent = 'دسترسی به دوربین برقرار نشد (' + (e && e.message ? e.message : e) + ')؛ از گالری یا ورود دستی استفاده کنید.';
+    }
+  });
+}
+
+/* گرفتن فریم مستقیم از المان ویدئو و تحلیل چندمرحله‌ای */
+async function captureAndAnalyzeFrame() {
+  const st = document.getElementById('scanStatus');
+  const err = document.getElementById('scanErr');
+  const btn = document.getElementById('btnCaptureAnalyze');
+  if (err) err.textContent = '';
+  if (st) st.textContent = 'در حال ثبت فریم و آماده‌سازی...';
+  if (btn) btn.disabled = true;
+
+  try {
+    const video = document.querySelector('#reader video');
+    let cv = null;
+    if (video && video.videoWidth > 0) {
+      cv = document.createElement('canvas');
+      cv.width = video.videoWidth;
+      cv.height = video.videoHeight;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(video, 0, 0, cv.width, cv.height);
+    } else {
+      throw new Error('دوربین هنوز آماده عکسبرداری نیست؛ لطفاً شکیبا باشید.');
+    }
+
+    if (st) st.textContent = 'در حال بهبود و تحلیل تصویر...';
+    const code = await runMultiPassDetection(cv, msg => { if (st) st.textContent = msg; });
+
+    if (code) {
+      if (st) st.textContent = 'بارکد با موفقیت خوانده شد!';
+      onDecoded(code);
+    } else {
+      if (st) st.textContent = '';
+      if (err) err.textContent = 'بارکد شناسایی نشد؛ زاویه دوربین را تنظیم کرده، نور را بیشتر کنید یا بارکد را دستی وارد کنید.';
+    }
+  } catch (e) {
+    if (st) st.textContent = '';
+    if (err) err.textContent = 'خطا در ثبت فریم: ' + (e && e.message ? e.message : e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function scanFromFile(input) {
+  if (!input.files || !input.files[0]) return;
+  const f = input.files[0];
+  const err = document.getElementById('scanErr');
+  const st = document.getElementById('scanStatus');
+  if (err) err.textContent = '';
+  if (st) st.textContent = 'در حال باز کردن تصویر...';
+
+  try {
+    const url = URL.createObjectURL(f);
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = url;
+    });
+    URL.revokeObjectURL(url);
+
+    const baseCv = toCanvas(img, 1400);
+    if (!baseCv) throw new Error('تبدیل تصویر ناموفق بود.');
+
+    if (st) st.textContent = 'در حال بهبود و تحلیل تصویر...';
+    const code = await runMultiPassDetection(baseCv, msg => { if (st) st.textContent = msg; });
+
+    if (st) st.textContent = '';
+    if (code) {
+      onDecoded(code);
+    } else {
+      if (err) err.textContent = 'بارکد در تصویر یافت نشد؛ تصویر واضح‌تر انتخاب کرده یا بارکد را دستی وارد نمایید.';
+    }
+  } catch (e) {
+    if (st) st.textContent = '';
+    if (err) err.textContent = 'خطا در پردازش تصویر گالری؛ تصویر دیگری امتحان کنید.';
+  }
+}
+
+function submitManualBarcodeFromModal() {
+  const inp = document.getElementById('manualBarcodeModalInput');
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (!val) {
+    const err = document.getElementById('scanErr');
+    if (err) err.textContent = 'لطفاً کد بارکد را وارد کنید.';
+    return;
+  }
+  onDecoded(val);
+}
+
+function onDecoded(txt) {
+  txt = String(txt).trim();
+  closeScanModal();
+  if (scanCb) scanCb(txt);
+}
+
+function closeScanModal() {
+  if (html5QrCode) {
+    try {
+      html5QrCode.stop().then(() => {
+        try { html5QrCode.clear(); } catch (e) {}
+      }).catch(() => {});
+    } catch (e) {}
+    html5QrCode = null;
+  }
+  const m = document.getElementById('scanModal');
+  if (m) {
+    m.classList.add('hidden');
+    m.innerHTML = '';
+  }
+}
+
+function stopScan() {
+  closeScanModal();
+}
+
+window.addEventListener('beforeunload', () => {
+  if (html5QrCode) {
+    try { html5QrCode.stop(); } catch (e) {}
+  }
+});
 </script>
 <script>
 /* ================= محصولات ================= */
