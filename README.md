@@ -37,3 +37,14 @@ In Android Studio, use **Build > Build Bundle(s) / APK(s) > Build APK(s)**. The 
 
 - The checkout calculates VAT using each product's configured VAT rate (seeded products default to 10%).
 - Data is local to one browser/device; this is not a multi-user cloud database or a payment gateway.
+
+## Barcode scanner notes
+
+- The scanner works offline: it uses the browser's native `BarcodeDetector` when available, plus a built-in EAN-13/EAN-8/UPC-A decoder. `html5-qrcode` (ZXing) is loaded lazily as an optional extra engine — from `www/vendor/html5-qrcode.min.js` if you add it, otherwise from jsDelivr/unpkg.
+- The live camera requires HTTPS (GitHub Pages is fine) or the Capacitor app. The "عکس با دوربین گوشی" and gallery buttons work everywhere.
+- **Android (Capacitor):** after `npx cap add android`, make sure `android/app/src/main/AndroidManifest.xml` contains:
+
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+```

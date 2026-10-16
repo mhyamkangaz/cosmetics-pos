@@ -9,7 +9,6 @@
 <link rel="icon" href="icons/icon.svg">
 <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 /* ===== Embedded fallback stylesheet (works with NO CDN at all) ===== */
 /* Layout */
@@ -214,415 +213,475 @@ function setTab(k){curTab=k;renderTabs();renderTab();}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 </script>
 <script>
-/* ================= اسکنر پیشرفته بارکد (راج‌مان گروپ + چند مرحله‌ای + تحلیل هوشمند) ================= */
-let html5QrCode = null, scanCb = null;
+/* ================= اسکنر بارکد مقاوم (آفلاین + BarcodeDetector + html5-qrcode اختیاری) ================= */
+let scanCb = null, scanStream = null, scanLoopTimer = null, scanBusy = false, scanDone = false;
 
-const H5_FORMATS = [
-  Html5QrcodeSupportedFormats.EAN_13,
-  Html5QrcodeSupportedFormats.EAN_8,
-  Html5QrcodeSupportedFormats.UPC_A,
-  Html5QrcodeSupportedFormats.UPC_E,
-  Html5QrcodeSupportedFormats.CODE_128,
-  Html5QrcodeSupportedFormats.CODE_39,
-  Html5QrcodeSupportedFormats.CODABAR,
-  Html5QrcodeSupportedFormats.ITF,
-  Html5QrcodeSupportedFormats.QR_CODE,
-  Html5QrcodeSupportedFormats.DATA_MATRIX,
-  Html5QrcodeSupportedFormats.AZTEC,
-  Html5QrcodeSupportedFormats.PDF_417
+/* ---------- 1) بارگذاری امن کتابخانه html5-qrcode از چند منبع (بدون شکستن برنامه) ---------- */
+const H5_SOURCES = [
+  'vendor/html5-qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
 ];
-
-const BD_FORMATS = [
-  'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'codabar', 'itf',
-  'qr_code', 'data_matrix', 'aztec', 'pdf417'
-];
-
-let bdDetectorInstance = null;
-
-async function getBarcodeDetector() {
-  if (!('BarcodeDetector' in window)) return null;
-  if (bdDetectorInstance) return bdDetectorInstance;
-  try {
-    let supported = BD_FORMATS;
-    if (typeof window.BarcodeDetector.getSupportedFormats === 'function') {
-      const avail = await window.BarcodeDetector.getSupportedFormats();
-      if (Array.isArray(avail) && avail.length > 0) {
-        supported = BD_FORMATS.filter(f => avail.includes(f));
-      }
+let h5LoadPromise = null;
+function loadH5Lib() {
+  if (typeof window.Html5Qrcode !== 'undefined') return Promise.resolve(true);
+  if (h5LoadPromise) return h5LoadPromise;
+  h5LoadPromise = (async () => {
+    for (const src of H5_SOURCES) {
+      const ok = await new Promise(res => {
+        const s = document.createElement('script');
+        s.src = src; s.async = true;
+        const t = setTimeout(() => res(false), 6000);
+        s.onload = () => { clearTimeout(t); res(typeof window.Html5Qrcode !== 'undefined'); };
+        s.onerror = () => { clearTimeout(t); s.remove(); res(false); };
+        document.head.appendChild(s);
+      });
+      if (ok) return true;
     }
-    bdDetectorInstance = new window.BarcodeDetector({ formats: supported.length ? supported : BD_FORMATS });
+    return false;
+  })();
+  return h5LoadPromise;
+}
+setTimeout(loadH5Lib, 1500); // پیش‌بارگذاری در پس‌زمینه
+
+function h5Formats() {
+  const F = window.Html5QrcodeSupportedFormats;
+  if (!F) return undefined;
+  return ['EAN_13','EAN_8','UPC_A','UPC_E','CODE_128','CODE_39','CODABAR','ITF','QR_CODE','DATA_MATRIX','AZTEC','PDF_417']
+    .map(k => F[k]).filter(v => v !== undefined);
+}
+
+/* ---------- 2) BarcodeDetector بومی مرورگر (اندروید کروم/WebView) ---------- */
+const BD_FORMATS = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','codabar','itf','qr_code','data_matrix','aztec','pdf417'];
+let bdDetectorInstance = null, bdTried = false;
+async function getBarcodeDetector() {
+  if (bdTried) return bdDetectorInstance;
+  bdTried = true;
+  if (!('BarcodeDetector' in window)) return null;
+  try {
+    let fm = BD_FORMATS;
+    if (typeof BarcodeDetector.getSupportedFormats === 'function') {
+      const av = await BarcodeDetector.getSupportedFormats();
+      if (Array.isArray(av) && av.length) fm = BD_FORMATS.filter(f => av.includes(f));
+      if (!fm.length) return null;
+    }
+    bdDetectorInstance = new BarcodeDetector({ formats: fm });
   } catch (e) {
-    try { bdDetectorInstance = new window.BarcodeDetector(); } catch (err) { bdDetectorInstance = null; }
+    try { bdDetectorInstance = new BarcodeDetector(); } catch (_) { bdDetectorInstance = null; }
   }
   return bdDetectorInstance;
 }
-
 async function bdDetect(source) {
   try {
     const det = await getBarcodeDetector();
     if (!det) return null;
     const codes = await det.detect(source);
-    if (codes && codes.length > 0) {
-      const val = String(codes[0].rawValue || '').trim();
-      if (val) return val;
-    }
+    for (const c of codes || []) { const v = String(c.rawValue || '').trim(); if (v) return v; }
   } catch (e) {}
   return null;
 }
 
-/* تبدیل هر منبع تصویری به canvas با حداکثر ابعاد مشخص */
-function toCanvas(source, maxDim = 1200) {
+/* ---------- 3) دیکودر داخلی EAN-13 / EAN-8 / UPC-A (کاملاً آفلاین، بدون هیچ کتابخانه) ---------- */
+const EAN_L = ['3211','2221','2122','1411','1132','1231','1114','1312','1213','3112'];
+const EAN_G = ['1123','1222','2212','1141','2311','1321','4111','2131','3121','2113'];
+const EAN_FIRST = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+const EAN_PATS = [];
+EAN_L.forEach((p, d) => EAN_PATS.push({ d, par: 'L', w: p.split('').map(Number) }));
+EAN_G.forEach((p, d) => EAN_PATS.push({ d, par: 'G', w: p.split('').map(Number) }));
+
+function matchDigit(runs, i, allowG) {
+  const tot = runs[i] + runs[i+1] + runs[i+2] + runs[i+3];
+  if (!tot) return null;
+  const u = tot / 7;
+  let best = null, bestErr = 1e9, second = 1e9;
+  for (const p of EAN_PATS) {
+    if (!allowG && p.par === 'G') continue;
+    let err = 0;
+    for (let k = 0; k < 4; k++) err += Math.abs(runs[i+k] / u - p.w[k]);
+    if (err < bestErr) { second = bestErr; bestErr = err; best = p; }
+    else if (err < second) second = err;
+  }
+  if (!best || bestErr > 1.6) return null;
+  return { d: best.d, par: best.par, err: bestErr };
+}
+function eanChecksumOk(s) {
+  const n = s.split('').map(Number), last = n.pop();
+  let sum = 0;
+  n.reverse().forEach((v, i) => sum += v * (i % 2 === 0 ? 3 : 1));
+  return (10 - sum % 10) % 10 === last;
+}
+function guardOk(runs, i, n, u) {
+  for (let k = 0; k < n; k++) { const r = runs[i+k] / u; if (r < 0.4 || r > 1.9) return false; }
+  return true;
+}
+/* runs: طول نوارها به ترتیب، اندیس زوج = سیاه */
+function decodeEANRuns(runs) {
+  // EAN-13: 59 run
+  for (let s = 0; s + 59 <= runs.length; s += 2) {
+    const u = (runs[s] + runs[s+1] + runs[s+2]) / 3;
+    if (!guardOk(runs, s, 3, u)) continue;
+    if (s > 0 && runs[s-1] < u * 3) continue; // ناحیه سفید قبل از شروع
+    let digits = '', pars = '', ok = true, i = s + 3;
+    for (let k = 0; k < 6; k++, i += 4) { const m = matchDigit(runs, i, true); if (!m) { ok = false; break; } digits += m.d; pars += m.par; }
+    if (!ok) continue;
+    if (!guardOk(runs, i, 5, u)) continue;
+    i += 5;
+    for (let k = 0; k < 6; k++, i += 4) { const m = matchDigit(runs, i, false); if (!m) { ok = false; break; } digits += m.d; }
+    if (!ok || !guardOk(runs, i, 3, u)) continue;
+    const first = EAN_FIRST.indexOf(pars);
+    if (first < 0) continue;
+    const code = first + digits;
+    if (eanChecksumOk(code)) return code;
+  }
+  // EAN-8: 43 run
+  for (let s = 0; s + 43 <= runs.length; s += 2) {
+    const u = (runs[s] + runs[s+1] + runs[s+2]) / 3;
+    if (!guardOk(runs, s, 3, u)) continue;
+    if (s > 0 && runs[s-1] < u * 3) continue;
+    let digits = '', ok = true, i = s + 3;
+    for (let k = 0; k < 4; k++, i += 4) { const m = matchDigit(runs, i, false); if (!m) { ok = false; break; } digits += m.d; }
+    if (!ok || !guardOk(runs, i, 5, u)) continue;
+    i += 5;
+    for (let k = 0; k < 4; k++, i += 4) { const m = matchDigit(runs, i, false); if (!m) { ok = false; break; } digits += m.d; }
+    if (!ok || !guardOk(runs, i, 3, u)) continue;
+    if (eanChecksumOk(digits)) return digits;
+  }
+  return null;
+}
+/* یک ردیف خاکستری را باینری و به run تبدیل می‌کند (از اولین نوار سیاه) */
+function rowToRuns(row) {
+  const n = row.length;
+  // آستانه محلی: میانگین min/max در پنجره لغزان
+  const win = Math.max(16, Math.round(n / 12));
+  const bin = new Uint8Array(n);
+  for (let x = 0; x < n; x++) {
+    let mn = 255, mx = 0;
+    const a = Math.max(0, x - win), b = Math.min(n - 1, x + win);
+    for (let k = a; k <= b; k += 2) { const v = row[k]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    bin[x] = (mx - mn < 28) ? (row[x] < 128 ? 1 : 0) : (row[x] < (mn + mx) / 2 ? 1 : 0);
+  }
+  const runs = [];
+  let x = 0;
+  // run اول را سفید درنظر می‌گیریم تا اندیس‌های زوج = سیاه باشند
+  let cur = 0, len = 0;
+  for (; x < n; x++) { if (bin[x] === cur) len++; else { runs.push(len); cur = bin[x]; len = 1; } }
+  runs.push(len);
+  return runs; // runs[0]=سفید، runs[1]=سیاه، ...
+}
+function decodeRow(row) {
+  const r = rowToRuns(row);
+  // اندیس 1 به بعد با نوار سیاه شروع می‌شود؛ پیشوند سفید را نگه می‌داریم برای بررسی quiet zone
+  const runs = r.slice(1);
+  const c = decodeEANRuns([999].concat(runs).slice(1).length ? runs : runs);
+  if (c) return c;
+  const rev = row.slice().reverse();
+  return decodeEANRuns(rowToRuns(rev).slice(1));
+}
+/* gray: Uint8Array w*h */
+function decodeGray(gray, w, h) {
+  const votes = {};
+  const lines = 40;
+  for (let li = 1; li < lines; li++) {
+    const y = Math.round(h * li / lines);
+    const row = new Uint8Array(w);
+    // میانگین سه سطر برای کاهش نویز
+    for (let x = 0; x < w; x++) {
+      const y0 = Math.max(0, y - 1), y2 = Math.min(h - 1, y + 1);
+      row[x] = (gray[y0*w+x] + gray[y*w+x] + gray[y2*w+x]) / 3;
+    }
+    const c = decodeRow(row);
+    if (c) { votes[c] = (votes[c] || 0) + 1; if (votes[c] >= 2) return c; }
+  }
+  const keys = Object.keys(votes);
+  return keys.length ? keys.sort((a, b) => votes[b] - votes[a])[0] : null;
+}
+function canvasGray(cv) {
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const d = ctx.getImageData(0, 0, cv.width, cv.height).data;
+  const g = new Uint8Array(cv.width * cv.height);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) g[j] = (d[i] * 77 + d[i+1] * 150 + d[i+2] * 29) >> 8;
+  return g;
+}
+function jsDecodeCanvas(cv) {
+  try {
+    const g = canvasGray(cv);
+    let c = decodeGray(g, cv.width, cv.height);
+    if (c) return c;
+    // عمودی (بارکد ۹۰ درجه)
+    const w = cv.width, h = cv.height, t = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) t[x * h + y] = g[y * w + x];
+    return decodeGray(t, h, w);
+  } catch (e) { return null; }
+}
+
+/* ---------- ابزار تصویر ---------- */
+function toCanvas(source, maxDim = 1400) {
   const w = source.naturalWidth || source.videoWidth || source.width;
   const h = source.naturalHeight || source.videoHeight || source.height;
   if (!w || !h) return null;
-  const scale = Math.min(1, maxDim / Math.max(w, h));
+  const sc = Math.min(1, maxDim / Math.max(w, h));
   const cv = document.createElement('canvas');
-  cv.width = Math.round(w * scale);
-  cv.height = Math.round(h * scale);
-  const ctx = cv.getContext('2d');
-  ctx.drawImage(source, 0, 0, cv.width, cv.height);
+  cv.width = Math.max(1, Math.round(w * sc)); cv.height = Math.max(1, Math.round(h * sc));
+  cv.getContext('2d', { willReadFrequently: true }).drawImage(source, 0, 0, cv.width, cv.height);
   return cv;
 }
-
-/* برش نواحی پرکاربرد بارکد */
-function cropCanvas(cv, type) {
-  const w = cv.width, h = cv.height;
-  let sx = 0, sy = 0, sw = w, sh = h;
-  if (type === 'center70') {
-    sw = Math.round(w * 0.7);
-    sh = Math.round(h * 0.7);
-    sx = Math.round((w - sw) / 2);
-    sy = Math.round((h - sh) / 2);
-  } else if (type === 'bottom50') {
-    sw = w;
-    sh = Math.round(h * 0.5);
-    sx = 0;
-    sy = Math.round(h * 0.5);
-  } else if (type === 'middleStripe') {
-    sw = w;
-    sh = Math.round(h * 0.35);
-    sx = 0;
-    sy = Math.round((h - sh) / 2);
-  }
-  const out = document.createElement('canvas');
-  out.width = sw;
-  out.height = sh;
-  const ctx = out.getContext('2d');
-  ctx.drawImage(cv, sx, sy, sw, sh, 0, 0, sw, sh);
-  return out;
+function scaleCanvas(cv, maxDim) {
+  const sc = maxDim / Math.max(cv.width, cv.height);
+  if (sc >= 1) return cv;
+  const o = document.createElement('canvas');
+  o.width = Math.round(cv.width * sc); o.height = Math.round(cv.height * sc);
+  o.getContext('2d', { willReadFrequently: true }).drawImage(cv, 0, 0, o.width, o.height);
+  return o;
 }
-
-/* چرخش تصویر به زاویه‌های مختلف (0, 90, 180, 270) */
+function cropCanvas(cv, fx, fy, fw, fh) {
+  const o = document.createElement('canvas');
+  const sx = Math.round(cv.width * fx), sy = Math.round(cv.height * fy);
+  o.width = Math.max(1, Math.round(cv.width * fw)); o.height = Math.max(1, Math.round(cv.height * fh));
+  o.getContext('2d', { willReadFrequently: true }).drawImage(cv, sx, sy, o.width, o.height, 0, 0, o.width, o.height);
+  return o;
+}
 function rotateCanvas(cv, deg) {
-  if (deg === 0) return cv;
-  const out = document.createElement('canvas');
-  const rad = (deg * Math.PI) / 180;
-  if (deg === 90 || deg === 270) {
-    out.width = cv.height;
-    out.height = cv.width;
-  } else {
-    out.width = cv.width;
-    out.height = cv.height;
-  }
-  const ctx = out.getContext('2d');
-  ctx.translate(out.width / 2, out.height / 2);
-  ctx.rotate(rad);
+  if (!deg) return cv;
+  const o = document.createElement('canvas');
+  if (deg % 180) { o.width = cv.height; o.height = cv.width; } else { o.width = cv.width; o.height = cv.height; }
+  const ctx = o.getContext('2d', { willReadFrequently: true });
+  ctx.translate(o.width / 2, o.height / 2); ctx.rotate(deg * Math.PI / 180);
   ctx.drawImage(cv, -cv.width / 2, -cv.height / 2);
-  return out;
+  return o;
 }
-
-/* بهبود کنتراست و تبدیل به خاکستری */
-function enhanceContrastAndGray(cv) {
-  const out = document.createElement('canvas');
-  out.width = cv.width;
-  out.height = cv.height;
-  const ctx = out.getContext('2d');
-  ctx.drawImage(cv, 0, 0);
-  const imgData = ctx.getImageData(0, 0, out.width, out.height);
-  const d = imgData.data;
-  const factor = 1.7;
-  const offset = (1 - factor) * 128;
+function enhanceContrast(cv) {
+  const o = document.createElement('canvas'); o.width = cv.width; o.height = cv.height;
+  const ctx = o.getContext('2d', { willReadFrequently: true }); ctx.drawImage(cv, 0, 0);
+  const im = ctx.getImageData(0, 0, o.width, o.height), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-    const adj = Math.max(0, Math.min(255, gray * factor + offset));
-    d[i] = adj;
-    d[i + 1] = adj;
-    d[i + 2] = adj;
+    const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    d[i] = d[i+1] = d[i+2] = Math.max(0, Math.min(255, (g - 128) * 1.8 + 128));
   }
-  ctx.putImageData(imgData, 0, 0);
-  return out;
+  ctx.putImageData(im, 0, 0);
+  return o;
 }
+const canvasToBlob = cv => new Promise(r => cv.toBlob(r, 'image/jpeg', 0.92));
 
-const canvasToBlob = cv => new Promise(resolve => cv.toBlob(resolve, 'image/png'));
-
-/* پایپ‌لاین تحلیلی چندمرحله‌ای (Multi-Pass Engine) */
-async function runMultiPassDetection(sourceCanvas, onProgress) {
-  if (!sourceCanvas) return null;
-  const crops = [
-    { name: 'full', cv: sourceCanvas },
-    { name: 'center70', cv: cropCanvas(sourceCanvas, 'center70') },
-    { name: 'bottom50', cv: cropCanvas(sourceCanvas, 'bottom50') },
-    { name: 'middleStripe', cv: cropCanvas(sourceCanvas, 'middleStripe') }
+/* ---------- 4) موتور تحلیل چندمرحله‌ای برای عکس/گالری ---------- */
+async function runMultiPassDetection(src, onProgress) {
+  if (!src) return null;
+  const P = m => { if (onProgress) onProgress(m); };
+  const big = scaleCanvas(src, 1600);
+  const variants = [
+    big,
+    cropCanvas(big, 0.1, 0.15, 0.8, 0.7),
+    cropCanvas(big, 0, 0.3, 1, 0.4),
+    cropCanvas(big, 0, 0.5, 1, 0.5),
+    cropCanvas(big, 0, 0, 1, 0.5),
+    scaleCanvas(big, 800)
   ];
-
-  // فاز اول: تست سریع با بارکد دیتکتور بومی روی نواحی مختلف
-  for (const c of crops) {
-    if (onProgress) onProgress('در حال بررسی سریع ' + c.name + '...');
-    const code = await bdDetect(c.cv);
-    if (code) return code;
+  P('مرحله ۱: تشخیص سریع...');
+  for (const v of variants) { const c = await bdDetect(v); if (c) return c; }
+  P('مرحله ۲: دیکودر داخلی EAN/UPC...');
+  for (const v of variants) {
+    for (const cv of [v, enhanceContrast(v)]) { const c = jsDecodeCanvas(cv); if (c) return c; }
+    await new Promise(r => setTimeout(r, 0));
   }
-
-  // فاز دوم: ایجاد واریانت‌های چرخش و فیلتر کنتراست
-  const candidates = [];
-  for (const c of crops) {
-    const base = c.cv;
-    const enhanced = enhanceContrastAndGray(base);
-    candidates.push(base);
-    candidates.push(enhanced);
-    candidates.push(rotateCanvas(base, 90));
-    candidates.push(rotateCanvas(base, 180));
-    candidates.push(rotateCanvas(base, 270));
-    candidates.push(rotateCanvas(enhanced, 90));
+  P('مرحله ۳: تحلیل عمیق (چرخش و کنتراست)...');
+  for (const v of variants.slice(0, 3)) {
+    for (const deg of [90, 180, 270]) { const c = await bdDetect(rotateCanvas(v, deg)); if (c) return c; }
+    const c = await bdDetect(enhanceContrast(v)); if (c) return c;
   }
-
-  // فاز سوم: تست BarcodeDetector روی واریانت‌ها
-  for (let i = 0; i < candidates.length; i++) {
-    const cv = candidates[i];
-    const code = await bdDetect(cv);
-    if (code) return code;
-  }
-
-  // فاز چهارم: استفاده از Html5Qrcode روی فایل‌های Blob کاندیدا
-  if (typeof Html5Qrcode !== 'undefined') {
-    const tmp = new Html5Qrcode('reader-hidden-tmp', { formatsToSupport: H5_FORMATS, verbose: false });
-    try {
-      for (let i = 0; i < candidates.length; i++) {
-        if (onProgress && i % 3 === 0) {
-          onProgress(`تحلیل عمیق بارکد (مرحله ${i + 1} از ${candidates.length})...`);
-        }
-        try {
-          const blob = await canvasToBlob(candidates[i]);
-          if (!blob) continue;
-          const file = new File([blob], 'candidate.png', { type: 'image/png' });
-          const res = await tmp.scanFile(file, false);
-          if (res && String(res).trim()) {
-            try { tmp.clear(); } catch (e) {}
-            return String(res).trim();
-          }
-        } catch (scanErr) {
-          // ادامه روی کاندیدای بعدی
-        }
-      }
-    } finally {
-      try { tmp.clear(); } catch (e) {}
+  P('مرحله ۴: کتابخانه ZXing...');
+  if (await loadH5Lib()) {
+    let host = document.getElementById('reader-hidden-tmp');
+    if (!host) { host = document.createElement('div'); host.id = 'reader-hidden-tmp'; host.style.display = 'none'; document.body.appendChild(host); }
+    const tmp = new Html5Qrcode('reader-hidden-tmp', { formatsToSupport: h5Formats(), verbose: false });
+    const list = [];
+    for (const v of variants.slice(0, 4)) { list.push(v, enhanceContrast(v), rotateCanvas(v, 90)); }
+    for (let i = 0; i < list.length; i++) {
+      P(`مرحله ۴: ZXing (${i + 1}/${list.length})...`);
+      try {
+        const blob = await canvasToBlob(list[i]);
+        if (!blob) continue;
+        const res = await tmp.scanFile(new File([blob], 'c.jpg', { type: 'image/jpeg' }), false);
+        if (res && String(res).trim()) { try { tmp.clear(); } catch (e) {} return String(res).trim(); }
+      } catch (e) {}
     }
+    try { tmp.clear(); } catch (e) {}
   }
-
   return null;
 }
 
+/* ---------- 5) مودال و دوربین زنده (getUserMedia مستقیم) ---------- */
+function setScanMsg(st, err) {
+  const a = document.getElementById('scanStatus'), b = document.getElementById('scanErr');
+  if (a && st !== undefined) a.textContent = st;
+  if (b && err !== undefined) b.textContent = err;
+}
+
 function openScanModal(cb) {
-  scanCb = cb;
-  stopScan();
+  stopCamera();
+  scanCb = cb; scanDone = false;
   const m = document.getElementById('scanModal');
   m.classList.remove('hidden');
   m.innerHTML = `
     <div class="box max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-2 pb-1 border-b border-slate-700">
-        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1">
-          <span>🔍</span> اسکن و بازشناسی بارکد
-        </h3>
-        <button class="text-slate-400 hover:text-white px-2 py-1 text-xs" onclick="closeScanModal()">✕ بستن</button>
+        <h3 class="font-bold text-sm">🔍 اسکن بارکد</h3>
+        <button class="text-slate-400 px-2 py-1 text-xs" onclick="closeScanModal()">✕ بستن</button>
       </div>
-
-      <!-- راهنمای کادر و نمای زنده دوربین -->
-      <div class="relative bg-black rounded-lg overflow-hidden mb-2 border border-slate-700">
-        <div id="reader" style="width:100%; min-height:220px;"></div>
-        <div id="reader-hidden-tmp" class="hidden"></div>
+      <div style="position:relative;background:#000;border-radius:10px;overflow:hidden;min-height:220px" class="mb-2">
+        <video id="scanVideo" playsinline muted autoplay style="width:100%;display:block;max-height:55vh;object-fit:cover"></video>
+        <div style="position:absolute;left:8%;right:8%;top:30%;bottom:30%;border:2px solid #10b981;border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.35);pointer-events:none"></div>
+        <div style="position:absolute;left:8%;right:8%;top:50%;height:2px;background:#ef4444;pointer-events:none"></div>
       </div>
-
-      <!-- دکمه عکسبرداری زنده و تحلیل فریم -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-        <button id="btnCaptureAnalyze" type="button" class="btn btn-p text-xs py-2 w-full font-bold flex items-center justify-center gap-1 shadow-md hover:brightness-110" onclick="captureAndAnalyzeFrame()">
-          📸 گرفتن عکس و تحلیل بارکد
-        </button>
-        <label class="btn btn-a text-xs py-2 w-full font-bold flex items-center justify-center gap-1 cursor-pointer shadow-md">
-          📷 انتخاب تصویر از گالری
-          <input type="file" accept="image/*" class="hidden" onchange="scanFromFile(this)">
+      <div id="reader-hidden-tmp" style="display:none"></div>
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <button id="btnCaptureAnalyze" type="button" class="btn btn-p text-xs py-2" onclick="captureAndAnalyzeFrame()">📸 عکس و تحلیل</button>
+        <label class="btn btn-a text-xs py-2" style="cursor:pointer;text-align:center">🖼️ انتخاب از گالری
+          <input type="file" accept="image/*" style="display:none" onchange="scanFromFile(this)">
         </label>
       </div>
-
-      <!-- وضعیت تحلیل و خطاها -->
-      <div id="scanStatus" class="text-xs text-sky-400 font-medium mb-1 min-h-[1.2rem] text-center"></div>
-      <p id="scanErr" class="text-rose-400 text-xs mb-2 text-center"></p>
-
-      <!-- ثبت دستی بارکد در صورت مخدوش بودن -->
-      <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-700/80 mb-2">
-        <div class="text-[11px] text-slate-300 mb-1.5 font-medium">✏️ در صورت مخدوش بودن بارکد، دستی وارد کنید:</div>
-        <div class="flex gap-2">
-          <input id="manualBarcodeModalInput" type="text" placeholder="کد بارکد..." class="flex-1 text-xs py-1.5 px-2 bg-slate-800 border border-slate-600 rounded text-slate-100 placeholder-slate-400" onkeydown="if(event.key==='Enter')submitManualBarcodeFromModal()">
-          <button type="button" class="btn btn-s text-xs px-3 py-1.5 whitespace-nowrap bg-emerald-700 hover:bg-emerald-600 text-white" onclick="submitManualBarcodeFromModal()">ثبت و تایید</button>
-        </div>
+      <label class="btn btn-s text-xs py-2 mb-2" style="display:block;text-align:center;cursor:pointer">📷 عکس با دوربین گوشی (روش جایگزین)
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanFromFile(this)">
+      </label>
+      <div id="scanStatus" class="text-xs text-center mb-1" style="color:#38bdf8;min-height:1.2rem"></div>
+      <p id="scanErr" class="text-xs text-center mb-2" style="color:#fb7185"></p>
+      <div class="flex gap-2 mb-2">
+        <input id="manualBarcodeModalInput" type="text" inputmode="numeric" placeholder="ورود دستی بارکد..." class="flex-1" onkeydown="if(event.key==='Enter')submitManualBarcodeFromModal()">
+        <button type="button" class="btn btn-s text-xs" onclick="submitManualBarcodeFromModal()">ثبت</button>
       </div>
+      <button class="btn btn-s w-full text-xs py-1.5" onclick="closeScanModal()">انصراف</button>
+    </div>`;
+  startCamera();
+}
 
-      <button class="btn btn-s w-full text-xs py-1.5" onclick="closeScanModal()">انصراف و بستن</button>
-    </div>
-  `;
-
-  if (typeof Html5Qrcode === 'undefined') {
-    const err = document.getElementById('scanErr');
-    if (err) err.textContent = 'کتابخانه اسکنر بارگذاری نشده؛ بارکد را از کادر بالا دستی وارد کنید.';
+async function startCamera() {
+  const video = document.getElementById('scanVideo');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setScanMsg('', window.isSecureContext === false
+      ? 'دوربین فقط روی HTTPS کار می‌کند (مثلاً GitHub Pages). از «انتخاب از گالری» یا «عکس با دوربین گوشی» استفاده کنید.'
+      : 'این مرورگر دسترسی مستقیم به دوربین ندارد؛ از دکمهٔ «عکس با دوربین گوشی» استفاده کنید.');
     return;
   }
-
-  html5QrCode = new Html5Qrcode("reader", {
-    formatsToSupport: H5_FORMATS,
-    verbose: false
-  });
-
-  const config = {
-    fps: 15,
-    qrbox: (viewfinderWidth, viewfinderHeight) => {
-      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-      const w = Math.min(320, Math.floor(minEdge * 0.85));
-      const h = Math.min(180, Math.floor(w * 0.65));
-      return { width: w, height: h };
-    },
-    aspectRatio: 1.333333
-  };
-
-  html5QrCode.start(
-    { facingMode: "environment" },
-    config,
-    txt => onDecoded(txt),
-    () => {}
-  ).catch(e => {
-    const err = document.getElementById('scanErr');
-    if (err) {
-      err.textContent = 'دسترسی به دوربین برقرار نشد (' + (e && e.message ? e.message : e) + ')؛ از گالری یا ورود دستی استفاده کنید.';
-    }
-  });
+  setScanMsg('در حال روشن کردن دوربین...', '');
+  const tries = [
+    { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 }, advanced: [{ focusMode: 'continuous' }] }, audio: false },
+    { video: { facingMode: 'environment' }, audio: false },
+    { video: true, audio: false }
+  ];
+  let lastErr = null;
+  for (const c of tries) {
+    try { scanStream = await navigator.mediaDevices.getUserMedia(c); break; } catch (e) { lastErr = e; }
+  }
+  if (!scanStream) {
+    const n = lastErr && lastErr.name;
+    setScanMsg('', n === 'NotAllowedError'
+      ? 'اجازهٔ دوربین داده نشد. از تنظیمات مرورگر/برنامه اجازهٔ دوربین را فعال کنید، یا از گالری استفاده کنید.'
+      : 'دوربین در دسترس نیست (' + (n || lastErr) + ')؛ از گالری یا ورود دستی استفاده کنید.');
+    return;
+  }
+  if (!document.getElementById('scanVideo')) { stopCamera(); return; } // مودال بسته شده
+  video.srcObject = scanStream;
+  try { await video.play(); } catch (e) {}
+  setScanMsg('بارکد را داخل کادر سبز و روی خط قرمز نگه دارید...', '');
+  scanLoop();
 }
 
-/* گرفتن فریم مستقیم از المان ویدئو و تحلیل چندمرحله‌ای */
+/* حلقهٔ اسکن زنده: BarcodeDetector → دیکودر داخلی → ZXing (هر چند فریم) */
+let frameNo = 0, liveH5 = null;
+async function scanLoop() {
+  if (scanDone || !scanStream) return;
+  const video = document.getElementById('scanVideo');
+  if (!video) return;
+  if (!scanBusy && video.videoWidth > 0) {
+    scanBusy = true;
+    try {
+      frameNo++;
+      const full = toCanvas(video, 1280);
+      const roi = cropCanvas(full, 0.05, 0.25, 0.9, 0.5);
+      let code = await bdDetect(roi) || await bdDetect(full);
+      if (!code) code = jsDecodeCanvas(roi);
+      if (!code && frameNo % 4 === 0 && typeof window.Html5Qrcode !== 'undefined') {
+        try {
+          if (!liveH5) liveH5 = new Html5Qrcode('reader-hidden-tmp', { formatsToSupport: h5Formats(), verbose: false });
+          const blob = await canvasToBlob(roi);
+          code = await liveH5.scanFile(new File([blob], 'f.jpg', { type: 'image/jpeg' }), false);
+        } catch (e) { code = null; }
+      }
+      if (code && String(code).trim()) { onDecoded(String(code).trim()); return; }
+    } catch (e) {} finally { scanBusy = false; }
+  }
+  scanLoopTimer = setTimeout(scanLoop, 120);
+}
+
+function stopCamera() {
+  if (scanLoopTimer) { clearTimeout(scanLoopTimer); scanLoopTimer = null; }
+  if (scanStream) { scanStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); scanStream = null; }
+  if (liveH5) { try { liveH5.clear(); } catch (e) {} liveH5 = null; }
+  scanBusy = false;
+}
+
 async function captureAndAnalyzeFrame() {
-  const st = document.getElementById('scanStatus');
-  const err = document.getElementById('scanErr');
   const btn = document.getElementById('btnCaptureAnalyze');
-  if (err) err.textContent = '';
-  if (st) st.textContent = 'در حال ثبت فریم و آماده‌سازی...';
+  const video = document.getElementById('scanVideo');
+  if (!video || !video.videoWidth) { setScanMsg('', 'دوربین آماده نیست؛ از «عکس با دوربین گوشی» یا گالری استفاده کنید.'); return; }
   if (btn) btn.disabled = true;
-
   try {
-    const video = document.querySelector('#reader video');
-    let cv = null;
-    if (video && video.videoWidth > 0) {
-      cv = document.createElement('canvas');
-      cv.width = video.videoWidth;
-      cv.height = video.videoHeight;
-      const ctx = cv.getContext('2d');
-      ctx.drawImage(video, 0, 0, cv.width, cv.height);
-    } else {
-      throw new Error('دوربین هنوز آماده عکسبرداری نیست؛ لطفاً شکیبا باشید.');
-    }
-
-    if (st) st.textContent = 'در حال بهبود و تحلیل تصویر...';
-    const code = await runMultiPassDetection(cv, msg => { if (st) st.textContent = msg; });
-
-    if (code) {
-      if (st) st.textContent = 'بارکد با موفقیت خوانده شد!';
-      onDecoded(code);
-    } else {
-      if (st) st.textContent = '';
-      if (err) err.textContent = 'بارکد شناسایی نشد؛ زاویه دوربین را تنظیم کرده، نور را بیشتر کنید یا بارکد را دستی وارد کنید.';
-    }
-  } catch (e) {
-    if (st) st.textContent = '';
-    if (err) err.textContent = 'خطا در ثبت فریم: ' + (e && e.message ? e.message : e);
-  } finally {
-    if (btn) btn.disabled = false;
-  }
+    const cv = toCanvas(video, 1920);
+    setScanMsg('در حال تحلیل فریم...', '');
+    const code = await runMultiPassDetection(cv, m => setScanMsg(m));
+    if (code) onDecoded(code);
+    else setScanMsg('', 'بارکد شناسایی نشد؛ نزدیک‌تر/واضح‌تر بگیرید یا دستی وارد کنید.');
+  } catch (e) { setScanMsg('', 'خطا: ' + (e.message || e)); }
+  finally { if (btn) btn.disabled = false; }
 }
 
-async function scanFromFile(input) {
-  if (!input.files || !input.files[0]) return;
-  const f = input.files[0];
-  const err = document.getElementById('scanErr');
-  const st = document.getElementById('scanStatus');
-  if (err) err.textContent = '';
-  if (st) st.textContent = 'در حال باز کردن تصویر...';
-
-  try {
+function loadImageFile(f) {
+  return new Promise((res, rej) => {
     const url = URL.createObjectURL(f);
-    const img = await new Promise((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = rej;
-      i.src = url;
-    });
-    URL.revokeObjectURL(url);
-
-    const baseCv = toCanvas(img, 1400);
-    if (!baseCv) throw new Error('تبدیل تصویر ناموفق بود.');
-
-    if (st) st.textContent = 'در حال بهبود و تحلیل تصویر...';
-    const code = await runMultiPassDetection(baseCv, msg => { if (st) st.textContent = msg; });
-
-    if (st) st.textContent = '';
-    if (code) {
-      onDecoded(code);
-    } else {
-      if (err) err.textContent = 'بارکد در تصویر یافت نشد؛ تصویر واضح‌تر انتخاب کرده یا بارکد را دستی وارد نمایید.';
-    }
-  } catch (e) {
-    if (st) st.textContent = '';
-    if (err) err.textContent = 'خطا در پردازش تصویر گالری؛ تصویر دیگری امتحان کنید.';
-  }
+    const i = new Image();
+    i.onload = () => { URL.revokeObjectURL(url); res(i); };
+    i.onerror = () => { URL.revokeObjectURL(url); rej(new Error('فرمت تصویر پشتیبانی نمی‌شود (HEIC را به JPG تبدیل کنید)')); };
+    i.src = url;
+  });
+}
+async function scanFromFile(input) {
+  const f = input.files && input.files[0];
+  input.value = ''; // تا انتخاب دوبارهٔ همان فایل هم کار کند
+  if (!f) return;
+  setScanMsg('در حال باز کردن تصویر...', '');
+  try {
+    let src;
+    if (window.createImageBitmap) { try { src = await createImageBitmap(f, { imageOrientation: 'from-image' }); } catch (e) { src = null; } }
+    if (!src) src = await loadImageFile(f);
+    const cv = toCanvas(src, 2000);
+    if (!cv) throw new Error('تبدیل تصویر ناموفق بود');
+    const code = await runMultiPassDetection(cv, m => setScanMsg(m));
+    if (code) onDecoded(code);
+    else setScanMsg('', 'بارکد در تصویر یافت نشد؛ عکس نزدیک‌تر و بدون تاری از خود بارکد بگیرید یا دستی وارد کنید.');
+  } catch (e) { setScanMsg('', 'خطا در پردازش تصویر: ' + (e.message || e)); }
 }
 
 function submitManualBarcodeFromModal() {
   const inp = document.getElementById('manualBarcodeModalInput');
-  if (!inp) return;
-  const val = inp.value.trim();
-  if (!val) {
-    const err = document.getElementById('scanErr');
-    if (err) err.textContent = 'لطفاً کد بارکد را وارد کنید.';
-    return;
-  }
-  onDecoded(val);
+  const v = inp ? inp.value.trim() : '';
+  if (!v) { setScanMsg('', 'لطفاً کد بارکد را وارد کنید.'); return; }
+  onDecoded(v);
 }
-
 function onDecoded(txt) {
-  txt = String(txt).trim();
+  if (scanDone) return;
+  scanDone = true;
+  txt = String(txt).trim().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+  try { if (navigator.vibrate) navigator.vibrate(80); } catch (e) {}
+  const cb = scanCb;
   closeScanModal();
-  if (scanCb) scanCb(txt);
+  if (cb) cb(txt);
 }
-
 function closeScanModal() {
-  if (html5QrCode) {
-    try {
-      html5QrCode.stop().then(() => {
-        try { html5QrCode.clear(); } catch (e) {}
-      }).catch(() => {});
-    } catch (e) {}
-    html5QrCode = null;
-  }
+  stopCamera();
   const m = document.getElementById('scanModal');
-  if (m) {
-    m.classList.add('hidden');
-    m.innerHTML = '';
-  }
+  if (m) { m.classList.add('hidden'); m.innerHTML = ''; }
 }
-
-function stopScan() {
-  closeScanModal();
-}
-
-window.addEventListener('beforeunload', () => {
-  if (html5QrCode) {
-    try { html5QrCode.stop(); } catch (e) {}
-  }
-});
+function stopScan() { closeScanModal(); }
+window.addEventListener('beforeunload', stopCamera);
+document.addEventListener('visibilitychange', () => { if (document.hidden && scanStream) closeScanModal(); });
 </script>
 <script>
 /* ================= محصولات ================= */
