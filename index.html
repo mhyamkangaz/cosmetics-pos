@@ -1,132 +1,285 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>فروشگاه آرایشی بهداشتی</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0f172a" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>فروشگاه آسان</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ec4899">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+/* CSS Fallback جهت اطمینان از استایل کامل در صورت مسدودی یا کندی CDN */
+*, *::before, *::after { box-sizing: border-box; }
+html { line-height: 1.5; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; font-family: Vazirmatn, system-ui, -apple-system, sans-serif; background-color: #f1f5f9; color: #0f172a; min-height: 100vh; }
+.hidden { display: none !important; }
+.flex { display: flex !important; }
+.flex-col { flex-direction: column !important; }
+.flex-1 { flex: 1 1 0% !important; }
+.grid { display: grid !important; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-3 { gap: 0.75rem !important; }
+.gap-4 { gap: 1rem !important; }
+.items-center { align-items: center !important; }
+.justify-between { justify-content: space-between !important; }
+.justify-center { justify-content: center !important; }
+.text-center { text-align: center !important; }
+.w-full { width: 100% !important; }
+.max-w-md { max-width: 28rem !important; }
+.max-w-2xl { max-width: 42rem !important; }
+.max-w-5xl { max-width: 64rem !important; }
+.min-h-screen { min-height: 100vh !important; }
+.p-2 { padding: 0.5rem !important; }
+.p-3 { padding: 0.75rem !important; }
+.p-4 { padding: 1rem !important; }
+.p-6 { padding: 1.5rem !important; }
+.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+.px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+.px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+.m-0 { margin: 0 !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 0.75rem !important; }
+.mb-4 { margin-bottom: 1rem !important; }
+.mb-6 { margin-bottom: 1.5rem !important; }
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-3 { margin-top: 0.75rem !important; }
+.mt-4 { margin-top: 1rem !important; }
+.rounded-lg { border-radius: 0.5rem !important; }
+.rounded-xl { border-radius: 0.75rem !important; }
+.rounded-2xl { border-radius: 1rem !important; }
+.bg-white { background-color: #ffffff !important; }
+.bg-slate-50 { background-color: #f8fafc !important; }
+.bg-slate-100 { background-color: #f1f5f9 !important; }
+.bg-slate-800 { background-color: #1e293b !important; }
+.bg-pink-500 { background-color: #ec4899 !important; }
+.bg-pink-600 { background-color: #db2777 !important; }
+.bg-emerald-600 { background-color: #059669 !important; }
+.bg-rose-600 { background-color: #e11d48 !important; }
+.text-white { color: #ffffff !important; }
+.text-slate-500 { color: #64748b !important; }
+.text-slate-600 { color: #475569 !important; }
+.text-slate-700 { color: #334155 !important; }
+.text-slate-800 { color: #1e293b !important; }
+.text-slate-900 { color: #0f172a !important; }
+.text-pink-600 { color: #db2777 !important; }
+.text-xs { font-size: 0.75rem !important; line-height: 1rem !important; }
+.text-sm { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+.text-lg { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+.text-xl { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-2xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+.font-bold { font-weight: 700 !important; }
+.font-medium { font-weight: 500 !important; }
+.border { border-width: 1px !important; border-style: solid !important; border-color: #e2e8f0 !important; }
+.border-b { border-bottom-width: 1px !important; border-bottom-style: solid !important; border-bottom-color: #e2e8f0 !important; }
+.border-t { border-top-width: 1px !important; border-top-style: solid !important; border-top-color: #e2e8f0 !important; }
+.shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; }
+.shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important; }
+.shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1) !important; }
+.fixed { position: fixed !important; }
+.sticky { position: sticky !important; }
+.top-0 { top: 0 !important; }
+.bottom-0 { bottom: 0 !important; }
+.inset-0 { inset: 0 !important; }
+.z-40 { z-index: 40 !important; }
+.z-50 { z-index: 50 !important; }
+.overflow-y-auto { overflow-y: auto !important; }
+.cursor-pointer { cursor: pointer !important; }
 
-  <style>
-    /* استایل‌های پایه و چیدمان بدون وابستگی به CDN */
-    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #0b1120;
-      color: #f1f5f9;
-      min-height: 100vh;
-      line-height: 1.5;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .hidden { display: none !important; }
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .flex-wrap { flex-wrap: wrap; }
-    .items-center { align-items: center; }
-    .justify-center { justify-content: center; }
-    .justify-between { justify-content: space-between; }
-    .flex-1 { flex: 1 1 0%; }
-    .grid { display: grid; }
-    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .gap-2 { gap: 0.5rem; }
-    .gap-3 { gap: 0.75rem; }
-    .gap-4 { gap: 1rem; }
-    .w-full { width: 100%; }
-    .max-w-md { max-width: 28rem; }
-    .max-w-4xl { max-width: 56rem; }
-    .mx-auto { margin-left: auto; margin-right: auto; }
-    .p-3 { padding: 0.75rem; }
-    .p-4 { padding: 1rem; }
-    .p-6 { padding: 1.5rem; }
-    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-    .px-4 { padding-left: 1rem; padding-right: 1rem; }
-    .mb-3 { margin-bottom: 0.75rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    .rounded-2xl { border-radius: 1rem; }
-    .border { border: 1px solid #334155; }
-    .text-center { text-align: center; }
-    .text-sm { font-size: 0.875rem; }
-    .text-xs { font-size: 0.75rem; }
-    .text-lg { font-size: 1.125rem; }
-    .text-xl { font-size: 1.25rem; }
-    .font-bold { font-weight: 700; }
-    
-    /* استایل اختصاصی کارت‌ها و ورودی‌ها با شفافیت و کنتراست بالا */
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 1rem;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    .input-field {
-      width: 100%;
-      background: #0f172a;
-      border: 1px solid #475569;
-      color: #ffffff;
-      padding: 0.75rem 1rem;
-      border-radius: 0.75rem;
-      font-family: inherit;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .input-field:focus {
-      border-color: #ec4899;
-      box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.2);
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.75rem 1rem;
-      font-weight: 700;
-      border-radius: 0.75rem;
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
-    }
-    .btn-primary { background: #ec4899; color: #ffffff; }
-    .btn-primary:active { background: #db2777; transform: scale(0.98); }
-    .btn-success { background: #10b981; color: #ffffff; }
-    .btn-secondary { background: #334155; color: #f1f5f9; }
-    .btn-danger { background: #ef4444; color: #ffffff; }
-
-    /* دکمه‌های ناوبری پایین صفحه برای موبایل */
-    .nav-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #1e293b;
-      border-top: 1px solid #334155;
-      display: flex;
-      justify-content: space-around;
-      padding: 0.5rem;
-      z-index: 40;
-    }
-    .nav-btn {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.25rem;
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-family: inherit;
-      font-size: 0.75rem;
-      cursor: pointer;
-    }
-    .nav-btn.active { color: #ec4899; font-weight: 700; }
-  </style>
+/* استایل کادر اسکنر و فیت شدن دقیق تصاویر گالری */
+#reader {
+  max-width: 100% !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  background-color: #0f172a !important;
+}
+#reader video, #reader img, #reader canvas {
+  max-width: 100% !important;
+  max-height: 260px !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+</style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- صفحه ورود (Login View) -->
-  <div id="loginView" class="flex flex-col items-center justify-center p-4" style="min-height: 100vh;">
-    <div class="card p-6 
+<!-- Login Screen -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-pink-500 rounded-2xl mx-auto flex items-center justify-center text-white text-3xl font-bold shadow-md">آ</div>
+      <h1 class="text-2xl font-bold text-slate-800 mt-3">فروشگاه آسان</h1>
+      <p class="text-xs text-slate-500 mt-1">نرم‌افزار مدیریت فروش و انبارداری هوشمند</p>
+    </div>
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">نام کاربری</label>
+        <input id="loginUser" type="text" required class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50 text-slate-800 focus:outline-none focus:border-pink-500">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700 mb-1">کلمه عبور</label>
+        <input id="loginPass" type="password" required class="w-full px-3 py-2 border rounded-lg text-sm bg-slate-50 text-slate-800 focus:outline-none focus:border-pink-500">
+      </div>
+      <button type="submit" class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold text-sm shadow-md transition">ورود به سیستم</button>
+    </form>
+    <div id="loginErr" class="text-xs text-rose-600 mt-3 text-center hidden">نام کاربری یا کلمه عبور نادرست است.</div>
+  </div>
+</div>
+
+<!-- Main App Shell -->
+<div id="appShell" class="min-h-screen flex flex-col hidden">
+  <header class="bg-white border-b sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">آ</div>
+      <div>
+        <div class="font-bold text-sm text-slate-800">فروشگاه آسان</div>
+        <div id="headerRole" class="text-[11px] text-pink-600 font-medium"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="backupBtn" title="پشتیبان‌گیری JSON" class="px-2 py-1 text-xs border rounded-lg text-slate-600 hover:bg-slate-50">پشتیبان</button>
+      <button id="logoutBtn" class="px-2.5 py-1 text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-medium">خروج</button>
+    </div>
+  </header>
+
+  <main class="flex-1 p-3 pb-20 max-w-5xl w-full mx-auto">
+    <div id="tabContent"></div>
+  </main>
+
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t z-40 max-w-5xl mx-auto shadow-md">
+    <div id="navBar" class="grid grid-cols-4 gap-1 p-1"></div>
+  </nav>
+</div>
+
+<!-- Scanner Modal -->
+<div id="scanModal" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-3 hidden">
+  <div class="bg-white rounded-2xl max-w-md w-full p-4 flex flex-col gap-3 shadow-xl">
+    <div class="flex items-center justify-between border-b pb-2">
+      <h3 class="font-bold text-sm text-slate-800">اسکن بارکد هوشمند</h3>
+      <button id="closeScanModal" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+    </div>
+    <div id="reader"></div>
+    <div class="flex gap-2">
+      <label class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium cursor-pointer">
+        فراخوانی از گالری
+        <input type="file" id="scanGalleryInput" accept="image/*" class="hidden">
+      </label>
+      <button id="torchBtn" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium hidden">فلش</button>
+    </div>
+    <div id="scanErr" class="text-xs text-rose-600 text-center"></div>
+  </div>
+</div>
+
+<script>
+/* ===== داده‌های اولیه و ذخیره‌سازی محلی ===== */
+const USERS = [
+  { id: '1', user: 'admin', pass: '1234', name: 'مدیر کل', role: 'admin' },
+  { id: '2', user: 'seller', pass: '1111', name: 'فروشنده', role: 'seller' },
+  { id: '3', user: 'acc', pass: '2222', name: 'حسابدار', role: 'acc' }
+];
+
+let state = {
+  currentUser: null,
+  activeTab: 'pos',
+  products: [],
+  sales: [],
+  cart: []
+};
+
+function loadStorage() {
+  try {
+    const p = localStorage.getItem('cos_products');
+    state.products = p ? JSON.parse(p) : getInitialProducts();
+    const s = localStorage.getItem('cos_sales');
+    state.sales = s ? JSON.parse(s) : [];
+  } catch(e) {
+    state.products = getInitialProducts();
+    state.sales = [];
+  }
+}
+
+function saveStorage() {
+  try {
+    localStorage.setItem('cos_products', JSON.stringify(state.products));
+    localStorage.setItem('cos_sales', JSON.stringify(state.sales));
+  } catch(e){}
+}
+
+function getInitialProducts() {
+  return [
+    { id: '101', barcode: '6260123456789', name: 'کرم ضدآفتاب SPF50 پیکسل', brand: 'پیکسل', cat: 'پوست', buyPrice: 180000, sellPrice: 260000, stock: 24, minStock: 5 },
+    { id: '102', barcode: '6260987654321', name: 'ریمل حجم‌دهنده اسنس مشکی', brand: 'اسنس', cat: 'چشم', buyPrice: 220000, sellPrice: 320000, stock: 15, minStock: 3 },
+    { id: '103', barcode: '6260111222333', name: 'رژ لب مات کالیستا شماره M24', brand: 'کالیستا', cat: 'لب', buyPrice: 95000, sellPrice: 155000, stock: 8, minStock: 4 },
+    { id: '104', barcode: '6260444555666', name: 'میسلار واتر گارنیر ۴۰۰ میل', brand: 'گارنیر', cat: 'پاک‌کننده', buyPrice: 310000, sellPrice: 440000, stock: 12, minStock: 2 }
+  ];
+}
+</script>
+
+<script>
+/* ===== موتور اسکن بارکد هوشمند با قابلیت پیش‌پردازش عکس گالری ===== */
+let html5QrCode = null;
+let scanCallback = null;
+
+function openScanModal(cb) {
+  scanCallback = cb;
+  document.getElementById('scanErr').textContent = '';
+  document.getElementById('scanModal').classList.remove('hidden');
+  startCameraScan();
+}
+
+function closeScanModalHandler() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    html5QrCode.stop().then(() => {
+      document.getElementById('scanModal').classList.add('hidden');
+    }).catch(() => {
+      document.getElementById('scanModal').classList.add('hidden');
+    });
+  } else {
+    document.getElementById('scanModal').classList.add('hidden');
+  }
+}
+
+function startCameraScan() {
+  const formats = [
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.EAN_8,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E,
+    Html5QrcodeSupportedFormats.QR_CODE
+  ];
+
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader", { formatsToSupport: formats, verbose: false });
+  }
+
+  const config = { fps: 15, qrbox: { width: 250, height: 160 } };
+  html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+    .catch(err => {
+      document.getElementById('scanErr').textContent = 'دسترسی دوربین ممکن نیست یا مسدود است.';
+    });
+}
+
+function onScanSuccess(decodedText) {
+  closeScanModalHandler();
+  if (scanCallback) scanCallback(decodedText);
+}
+
+// تغییر ابعاد تصاویر حجیم گالری برای خوانش دقیق OCR/بارکد
+async function preprocessImage(file, maxWidth = 1200) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxWidth || h > maxWidth) {
+        if (w > h) { h = Math.round((h * maxWidth) / w); w = maxWidth; }
+        else { w = Math.round((w * maxWidth) / h); h = maxWidth; }
+      }
+      const canvas = document.createElement('canvas
