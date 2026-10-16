@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>آرایشی بهداشتی</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg">
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{font-family:Vazirmatn,system-ui,sans-serif}
+body{background:#0f172a;color:#e2e8f0}
+.card{background:#1e293b;border:1px solid #334155;border-radius:1rem}
+input,select{background:#0f172a;border:1px solid #334155;border-radius:.5rem;padding:.5rem;color:#e2e8f0;width:100%}
+.btn{border-radius:.6rem;padding:.55rem .9rem;font-weight:600;cursor:pointer}
+.btn-p{background:#ec4899;color:#fff}.btn-s{background:#334155;color:#e2e8f0}.btn-d{background:#7f1d1d;color:#fff}
+table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #334155}
+.low{background:#450a0a}
+.bar{height:10px;border-radius:5px;background:linear-gradient(90deg,#ec4899,#8b5cf6)}
+.tabbtn{padding:.5rem .8rem;border-radius:.6rem;font-size:.8rem}
+.tabbtn.active{background:#ec4899;color:#fff}
+#reader{max-width:100%}
+</style>
+</head>
+<body class="min-h-screen">
+<!-- LOGIN -->
+<div id="loginView" class="flex items-center justify-center min-h-screen p-4">
+ <div class="card p-6 w-full max-w-sm text-center">
+  <div class="text-5xl mb-2">💄</div>
+  <h1 class="text-xl font-bold mb-4">آرایشی بهداشتی — ورود</h1>
+  <input id="liUser" placeholder="نام کاربری" class="mb-3">
+  <input id="liPass" type="password" placeholder="رمز عبور" class="mb-4">
+  <button class="btn btn-p w-full" onclick="doLogin()">ورود</button>
+  <p id="liErr" class="text-red-400 text-sm mt-2"></p>
+ </div>
+</div>
+<!-- APP -->
+<div id="appView" class="hidden max-w-3xl mx-auto p-3 pb-20">
+ <div class="flex items-center justify-between my-2">
+  <span class="font-bold">آرایشی بهداشتی</span>
+  <div class="flex gap-2 items-center text-sm"><span id="whoami"></span><button class="btn btn-s" onclick="logout()">خروج</button></div>
+ </div>
+ <nav id="tabs" class="flex gap-1 flex-wrap mb-3"></nav>
+ <div id="content"></div>
+</div>
+<script>
+/* ---------- storage ---------- */
+const LS={p:'cpos_products',i:'cpos_invoices'};
+const SEED=[
+ ['6001001','شامپو ترمیم‌کننده','سی‌گنیفیک','شامپو',85000,120000,10,12],
+ ['6001002','کرم دست نرم‌کننده','پارمیدا','کرم',40000,65000,10,8],
+ ['6001003','رژ لب مات','نوت','آرایش',120000,175000,10,5],
+ ['6001004','لاک ناخن','میکارون','آرایش',55000,90000,10,3],
+ ['6001005','کرم ضدآفتاب SPF50','درماتیپیکس','ضدآفتاب',180000,245000,10,7],
+ ['6001006','شامپوی بچه','بی‌بی','شامپو',60000,85000,10,4]
+];
+function load(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+let products=load(LS.p,null);
+if(!products){products=SEED.map(r=>({barcode:r[0],name:r[1],brand:r[2],category:r[3],purchase_price:r[4],sale_price:r[5],vat_percent:r[6],stock:r[7]}));save(LS.p,products)}
+let invoices=load(LS.i,[]);
+let cart=[], user=null;
+const fmt=n=>Number(n||0).toLocaleString('fa-IR');
+const jdate=d=>new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+const fmoney=n=>fmt(n)+' تومان';
+</script>

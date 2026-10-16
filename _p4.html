@@ -1,0 +1,59 @@
+<script>
+/* ---------- POS ---------- */
+function renderPOS(){
+ const c=document.getElementById('content');
+ c.innerHTML=`<div class="card p-3 mb-3">
+  <div class="flex gap-2"><input id="posSearch" placeholder="جستجوی نام یا بارکد" oninput="showMatches()">
+   <button class="btn btn-p" onclick="scanForPOS()">اسکن</button></div>
+  <div id="scanZone" class="hidden mt-2"></div><div id="posMatches" class="mt-2"></div>
+ </div>
+ <div class="card p-3"><h2 class="font-bold mb-2">سبد خرید</h2><div id="cartRows"></div>
+  <div id="cartTotals" class="border-t border-slate-600 mt-3 pt-3"></div>
+  <button class="btn btn-p w-full mt-3" onclick="checkout()">ثبت فروش</button>
+ </div><div id="receipt" class="mt-3"></div>`;
+ drawCart();
+}
+function showMatches(){
+ const q=document.getElementById('posSearch').value.trim().toLowerCase();
+ const found=products.filter(p=>q&&(p.name.toLowerCase().includes(q)||p.barcode.includes(q))).slice(0,8);
+ document.getElementById('posMatches').innerHTML=found.map(p=>`<button class="card block w-full text-right p-2 mb-1" onclick="addCart('${p.barcode}')">${p.name} — ${fmoney(p.sale_price)} (موجودی ${fmt(p.stock)})</button>`).join('');
+}
+function scanForPOS(){startCamScan(code=>{const p=products.find(x=>x.barcode===code);if(p)addCart(code);else alert('محصولی با این بارکد ثبت نشده است');});}
+function addCart(code){
+ const p=products.find(x=>x.barcode===code);if(!p)return;
+ if(p.stock<=0){alert('موجودی کافی نیست');return;}
+ const row=cart.find(x=>x.barcode===code);
+ if(row){if(row.qty>=p.stock){alert('موجودی کافی نیست');return;}row.qty++;}
+ else cart.push({barcode:code,qty:1});
+ drawCart();
+}
+function setQty(code,val){
+ const row=cart.find(x=>x.barcode===code),p=products.find(x=>x.barcode===code);if(!row)return;
+ row.qty=Math.max(1,Math.min(p.stock,+val||1));drawCart();
+}
+function removeCart(code){cart=cart.filter(x=>x.barcode!==code);drawCart();}
+function cartMath(){
+ let net=0,vat=0,profit=0;
+ for(const row of cart){const p=products.find(x=>x.barcode===row.barcode);if(!p)continue;
+  const line=p.sale_price*row.qty;net+=line;vat+=line*(p.vat_percent||0)/100;profit+=(p.sale_price-p.purchase_price)*row.qty;}
+ return {net,vat,grand:net+vat,profit};
+}
+function drawCart(){
+ const rows=document.getElementById('cartRows');if(!rows)return;
+ rows.innerHTML=cart.length?cart.map(r=>{const p=products.find(x=>x.barcode===r.barcode);return `<div class="flex items-center gap-2 py-2 border-b border-slate-700">
+ <div class="flex-1"><b>${p.name}</b><div class="text-xs text-slate-400">${fmoney(p.sale_price)} ×</div></div>
+ <input type="number" min="1" max="${p.stock}" value="${r.qty}" style="width:65px" onchange="setQty('${p.barcode}',this.value)">
+ <span>${fmoney(p.sale_price*r.qty)}</span><button class="text-red-400" onclick="removeCart('${p.barcode}')">✕</button></div>`}).join(''):'<p class="text-slate-400">سبد خالی است</p>';
+ const m=cartMath();document.getElementById('cartTotals').innerHTML=`<div class="flex justify-between"><span>جمع کالا</span><b>${fmoney(m.net)}</b></div><div class="flex justify-between"><span>مالیات</span><b>${fmoney(m.vat)}</b></div><div class="flex justify-between text-lg text-pink-400"><span>مبلغ نهایی</span><b>${fmoney(m.grand)}</b></div>`;
+}
+function checkout(){
+ if(!cart.length){alert('سبد خرید خالی است');return;}
+ for(const r of cart){const p=products.find(x=>x.barcode===r.barcode);if(!p||p.stock<r.qty){alert('موجودی برای '+(p?p.name:'محصول')+' کافی نیست');return;}}
+ const m=cartMath();
+ const items=cart.map(r=>{const p=products.find(x=>x.barcode===r.barcode);return {barcode:p.barcode,name:p.name,brand:p.brand,qty:r.qty,purchase_price:p.purchase_price,sale_price:p.sale_price,vat_percent:p.vat_percent,line_total:p.sale_price*r.qty,vat:p.sale_price*r.qty*(p.vat_percent||0)/100};});
+ const inv={id:Date.now(),date:new Date().toISOString(),jalali_date:jdate(new Date()),seller:user.username, seller_name:user.role,items,subtotal:m.net,vat:m.vat,total:m.grand,profit:m.profit};
+ for(const r of cart){const p=products.find(x=>x.barcode===r.barcode);p.stock-=r.qty;}
+ invoices.push(inv);save(LS.i,invoices);save(LS.p,products);cart=[];drawCart();
+ document.getElementById('receipt').innerHTML=`<div class="card p-4"><h3 class="font-bold">✅ فروش ثبت شد</h3><p>فاکتور: ${fmt(inv.id)}</p><p>تاریخ: ${inv.jalali_date}</p><p>فروشنده: ${inv.seller_name}</p><p>تعداد اقلام: ${fmt(items.length)}</p><b class="text-pink-400">مبلغ نهایی: ${fmoney(inv.total)}</b></div>`;
+}
+</script>

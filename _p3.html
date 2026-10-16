@@ -1,0 +1,79 @@
+<script>
+/* ---------- products module ---------- */
+function renderProducts(){
+ const c=document.getElementById('content');
+ c.innerHTML=`
+ <div class="card p-3 mb-3">
+  <div class="flex gap-2 items-end">
+   <div class="flex-1"><label class="text-xs">بارکد</label><input id="pBarcode"></div>
+   <button class="btn btn-p" onclick="scanForProduct()">اسکن بارکد</button>
+   <label class="btn btn-s">از گالری<input type="file" accept="image/*" class="hidden" onchange="scanFromFile(this,handleScanResult)"></label>
+  </div>
+  <div id="scanZone" class="hidden mt-2"></div>
+ </div>
+ <div class="card p-3 mb-3">
+  <div class="grid grid-cols-2 gap-2">
+   <div><label class="text-xs">نام</label><input id="pName"></div>
+   <div><label class="text-xs">برند</label><input id="pBrand"></div>
+   <div><label class="text-xs">دسته</label><input id="pCat"></div>
+   <div><label class="text-xs">قیمت خرید</label><input id="pBuy" type="number" inputmode="numeric"></div>
+   <div><label class="text-xs">قیمت فروش</label><input id="pSale" type="number" inputmode="numeric"></div>
+   <div><label class="text-xs">مالیات %</label><input id="pVat" type="number" inputmode="numeric" value="10"></div>
+   <div><label class="text-xs">موجودی</label><input id="pStock" type="number" inputmode="numeric"></div>
+  </div>
+  <div class="flex gap-2 mt-3">
+   <button class="btn btn-p flex-1" onclick="saveProduct()">ذخیره محصول</button>
+   <button class="btn btn-s" onclick="clearForm()">پاک‌کردن فرم</button>
+  </div>
+ </div>
+ <div class="card p-3 overflow-x-auto">
+  <table><thead><tr><th>بارکد</th><th>نام</th><th>برند</th><th>فروش</th><th>موجودی</th><th></th></tr></thead>
+  <tbody>${products.map((p,i)=>`<tr>
+   <td>${p.barcode}</td><td>${p.name}</td><td>${p.brand}</td><td>${fmoney(p.sale_price)}</td><td>${fmt(p.stock)}</td>
+   <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="editProduct(${i})">ویرایش</button><button class="btn btn-d text-xs" onclick="delProduct(${i})">حذف</button></td>
+  </tr>`).join('')}</tbody></table>
+ </div>`;
+}
+function fillForm(p){
+ const set=(id,v)=>document.getElementById(id).value=v;
+ set('pBarcode',p.barcode||'');set('pName',p.name||'');set('pBrand',p.brand||'');set('pCat',p.category||'');
+ set('pBuy',p.purchase_price||'');set('pSale',p.sale_price||'');set('pVat',p.vat_percent??10);set('pStock',p.stock??'');
+}
+function clearForm(){['pBarcode','pName','pBrand','pCat','pBuy','pSale','pStock'].forEach(id=>document.getElementById(id).value='');document.getElementById('pVat').value=10;}
+function editProduct(i){fillForm(products[i]);window.scrollTo({top:0,behavior:'smooth'});}
+function delProduct(i){if(confirm('حذف '+products[i].name+'؟')){products.splice(i,1);save(LS.p,products);renderProducts();}}
+function saveProduct(){
+ const g=id=>document.getElementById(id).value.trim();
+ const b=g('pBarcode')||String(Date.now());
+ const rec={barcode:b,name:g('pName'),brand:g('pBrand'),category:g('pCat'),
+  purchase_price:+g('pBuy')||0,sale_price:+g('pSale')||0,vat_percent:+g('pVat')||0,stock:+g('pStock')||0};
+ const ix=products.findIndex(p=>p.barcode===b);
+ if(ix>=0)products[ix]=rec; else products.push(rec);
+ save(LS.p,products);clearForm();renderProducts();
+}
+function scanForProduct(){startCamScan(handleScanResult);}
+function handleScanResult(code){
+ // after scan: existing product -> autofill form, else prefill barcode
+ const p=products.find(x=>x.barcode===code);
+ if(curTab!=='products')setTab('products');
+ setTimeout(()=>{
+  if(p){fillForm(p);}else{document.getElementById('pBarcode').value=code;}
+  window.scrollTo({top:0,behavior:'smooth'});
+ },50);
+}
+
+/* ---------- inventory ---------- */
+function renderInventory(){
+ const c=document.getElementById('content');
+ c.innerHTML=`<div class="card p-3 overflow-x-auto">
+ <table><thead><tr><th>نام</th><th>برند</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>
+ ${products.map(p=>`<tr class="${p.stock<5?'low':''}">
+  <td>${p.name}</td><td>${p.brand}</td><td class="font-bold ${p.stock<5?'text-red-400':''}">${fmt(p.stock)}</td>
+  <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="stockAdj('${p.barcode}',1)">+</button><button class="btn btn-s text-xs" onclick="stockAdj('${p.barcode}',-1)">−</button></td>
+ </tr>`).join('')}</tbody></table></div>`;
+}
+function stockAdj(code,d){
+ const p=products.find(x=>x.barcode===code);
+ if(p){p.stock=Math.max(0,p.stock+d);save(LS.p,products);renderInventory();}
+}
+</script>

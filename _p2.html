@@ -1,0 +1,59 @@
+<script>
+/* ---------- login & nav ---------- */
+const USERS={
+ admin:{pass:'1234',role:'مدیر کل',tabs:['pos','products','inventory','reports','settings']},
+ seller:{pass:'1111',role:'فروشنده',tabs:['pos','products']},
+ acc:{pass:'2222',role:'حسابداری',tabs:['inventory','reports']}
+};
+const TAB_LABELS={pos:'🛒 صندوق فروش',products:'📦 محصولات',inventory:'📊 موجودی',reports:'📈 گزارشات',settings:'⚙ تنظیمات'};
+let curTab='pos';
+
+function doLogin(){
+ const u=document.getElementById('liUser').value.trim();
+ const p=document.getElementById('liPass').value.trim();
+ if(USERS[u]&&USERS[u].pass===p){
+  user={username:u,...USERS[u]};
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('whoami').textContent=`${user.role} (${u})`;
+  curTab=user.tabs[0];
+  renderTabs();
+  renderTab();
+ } else {
+  document.getElementById('liErr').textContent='نام کاربری یا رمز نادرست است';
+ }
+}
+function logout(){user=null;document.getElementById('appView').classList.add('hidden');document.getElementById('loginView').classList.remove('hidden');}
+function renderTabs(){
+ const t=document.getElementById('tabs');
+ t.innerHTML=user.tabs.map(k=>`<button class="tabbtn ${k===curTab?'active':'btn-s'}" onclick="setTab('${k}')">${TAB_LABELS[k]}</button>`).join('');
+}
+function setTab(k){curTab=k;renderTabs();renderTab();}
+
+/* ---------- scanner helper ---------- */
+let html5QrCode=null;
+function startCamScan(onDecoded){
+ stopScan();
+ const el=document.getElementById('scanZone');
+ el.classList.remove('hidden');
+ el.innerHTML='<div id="reader"></div><button class="btn btn-s mt-2 w-full" onclick="stopScan()">بستن دوربین</button>';
+ html5QrCode=new Html5Qrcode("reader");
+ html5QrCode.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:150}},(txt)=>{
+  stopScan(); onDecoded(txt);
+ },(err)=>{}).catch(e=>{alert('خطا در دسترسی به دوربین: '+e);stopScan()});
+}
+function scanFromFile(inputEl,onDecoded){
+ if(!inputEl.files||!inputEl.files[0])return;
+ const file=inputEl.files[0];
+ const reader=new Html5Qrcode("hiddenReader");
+ reader.scanFile(file,true).then(txt=>{onDecoded(txt);reader.clear();}).catch(e=>{alert('بارکد در تصویر یافت نشد: '+e);reader.clear();});
+}
+function stopScan(){
+ if(html5QrCode){
+  try{html5QrCode.stop().then(()=>html5QrCode.clear());}catch(e){}
+  html5QrCode=null;
+ }
+ const el=document.getElementById('scanZone');
+ if(el){el.classList.add('hidden');el.innerHTML='';}
+}
+</script>
