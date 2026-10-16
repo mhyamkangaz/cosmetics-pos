@@ -82,8 +82,8 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 <!-- LOGIN -->
 <div id="loginView" class="flex items-center justify-center min-h-screen p-4">
  <div class="card p-6 w-full max-w-sm text-center">
-  <div class="text-5xl mb-2">💄</div>
-  <h1 class="text-xl font-bold mb-1">فروشگاه آسان</h1>
+  <div class="mb-3 flex justify-center"><img id="loginLogo" src="icons/easy-store-logo.png" alt="لوگو" class="w-16 h-16 object-contain rounded-xl shadow-sm"></div>
+  <h1 id="loginStoreName" class="text-xl font-bold mb-1">فروشگاه آسان</h1>
   <p class="text-xs text-slate-400 mb-4">صندوق فروش، انبار و حسابداری</p>
   <input id="liUser" placeholder="نام کاربری" class="mb-3">
   <input id="liPass" type="password" placeholder="رمز عبور" class="mb-4" onkeydown="if(event.key==='Enter')doLogin()">
@@ -95,7 +95,7 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 <!-- APP -->
 <div id="appView" class="hidden max-w-3xl mx-auto p-3 pb-24">
  <div class="flex items-center justify-between my-2 flex-wrap gap-2">
-  <span class="font-bold">فروشگاه آسان</span>
+  <div class="flex items-center gap-2"><img id="headerLogo" src="icons/easy-store-logo.png" alt="لوگو" class="w-7 h-7 object-contain rounded"><span id="headerStoreName" class="font-bold">فروشگاه آسان</span></div>
   <div class="flex gap-2 items-center text-sm">
    <span id="whoami" class="badge role-admin"></span>
    <span id="todayJ" class="text-xs text-slate-400"></span>
@@ -110,6 +110,21 @@ table{width:100%;font-size:.85rem}th,td{padding:.4rem;border-bottom:1px solid #3
 <script>
 /* ================= ذخیره‌سازی مقاوم (هرگز داده از دست نمی‌رود) ================= */
 const LS={p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings'};
+
+function applyStoreBranding(){
+ const name = (settings && settings.store_name) ? settings.store_name : 'فروشگاه آسان';
+ const logo = (settings && settings.store_logo) ? settings.store_logo : 'icons/easy-store-logo.png';
+ const elLoginName = document.getElementById('loginStoreName');
+ if(elLoginName) elLoginName.textContent = name;
+ const elHeaderName = document.getElementById('headerStoreName');
+ if(elHeaderName) elHeaderName.textContent = name;
+ const elLoginLogo = document.getElementById('loginLogo');
+ if(elLoginLogo) elLoginLogo.src = logo;
+ const elHeaderLogo = document.getElementById('headerLogo');
+ if(elHeaderLogo) elHeaderLogo.src = logo;
+ document.title = name + ' — صندوق و حسابداری';
+}
+
 function lsGet(k,d){
  try{const raw=localStorage.getItem(k);if(raw==null)return d;const v=JSON.parse(raw);return v??d;}
  catch(e){console.error('localStorage read failed',k,e);return d;}
@@ -148,7 +163,7 @@ let products=migrateProducts(lsGet(LS.p,null));
 if(!products||!products.length){products=migrateProducts(SEED.map(r=>({barcode:r[0],name:r[1],brand:r[2],category:r[3],purchase_price:r[4],sale_price:r[5],vat_percent:r[6],stock:r[7]})));lsSet(LS.p,products);}
 let invoices=lsGet(LS.i,[]);if(!Array.isArray(invoices))invoices=[];
 let expenses=lsGet(LS.e,[]);if(!Array.isArray(expenses))expenses=[];
-let settings=Object.assign({income_tax_percent:15,operating_expense_monthly:0},lsGet(LS.s,{}));
+let settings=Object.assign({income_tax_percent:15,operating_expense_monthly:0,store_name:'فروشگاه آسان',store_address:'',store_phone:'',store_logo:''},lsGet(LS.s,{}));
 let cart=[], user=null;
 
 const fmt=n=>Number(n||0).toLocaleString('fa-IR');
@@ -627,7 +642,49 @@ function delExpense(i){expenses.splice(i,1);lsSet(LS.e,expenses);renderExpenses(
 /* ================= تنظیمات ================= */
 function renderSettings(){
  const c=document.getElementById('content');
- c.innerHTML=`
+ const isAdmin = (user && user.username === 'admin');
+ const logoSrc = (settings.store_logo || 'icons/easy-store-logo.png');
+ let storeSettingsHtml = '';
+ if(isAdmin){
+  storeSettingsHtml = `
+ <div class="card p-3 mb-3">
+  <h3 class="font-bold mb-2 flex items-center gap-2"><span>🏪</span>تنظیمات فروشگاه (فقط مدیر)</h3>
+  <div class="space-y-3">
+   <div>
+    <label class="text-xs block mb-1">نام فروشگاه</label>
+    <input id="stStoreName" class="w-full" value="${(settings.store_name || 'فروشگاه آسان').replace(/"/g, '&quot;')}">
+   </div>
+   <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+    <div>
+     <label class="text-xs block mb-1">شماره تماس (اختیاری)</label>
+     <input id="stStorePhone" class="w-full" placeholder="مثال: 09123456789" value="${(settings.store_phone || '').replace(/"/g, '&quot;')}">
+    </div>
+    <div>
+     <label class="text-xs block mb-1">آدرس فروشگاه (اختیاری)</label>
+     <input id="stStoreAddress" class="w-full" placeholder="مثال: خیابان اصلی، پلاک ۱۰" value="${(settings.store_address || '').replace(/"/g, '&quot;')}">
+    </div>
+   </div>
+   <div class="pt-2 border-t border-slate-700">
+    <label class="text-xs block mb-2 font-bold">لوگوی فروشگاه</label>
+    <div class="flex items-center gap-4 flex-wrap">
+     <div class="w-20 h-20 bg-slate-800 rounded-lg flex items-center justify-center p-2 border border-slate-700">
+      <img id="stLogoPreview" src="${logoSrc}" alt="پیش‌نمایش لوگو" class="max-w-full max-h-full object-contain">
+     </div>
+     <div class="flex-1 min-w-[200px] flex flex-col gap-2">
+      <label class="btn btn-s text-center cursor-pointer">
+       <span>انتخاب تصویر لوگو جدید</span>
+       <input type="file" id="stLogoInput" accept="image/*" class="hidden" onchange="previewCustomLogo(this)">
+      </label>
+      <button type="button" class="btn btn-d text-xs" onclick="resetStoreLogo()">بازنشانی به لوگوی پیش‌فرض</button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <button class="btn btn-p w-full mt-3" onclick="saveStoreSettings()">ذخیره مشخصات فروشگاه</button>
+ </div>`;
+ }
+
+ c.innerHTML= storeSettingsHtml + `
  <div class="card p-3 mb-3"><h3 class="font-bold mb-2">تنظیمات مالی</h3>
   <div class="grid grid-cols-2 gap-2">
    <div><label class="text-xs">نرخ مالیات عملکرد % (15 تا 20)</label>
@@ -644,7 +701,53 @@ function renderSettings(){
  <div class="card p-3"><h3 class="font-bold mb-2 text-red-400">منطقه خطر</h3>
   <button class="btn btn-d w-full" onclick="resetAll()">پاک‌کردن همه داده‌ها</button></div>`;
 }
+
+let tempCustomLogo = null;
+function previewCustomLogo(input){
+ if(!input.files || !input.files[0]) return;
+ const file = input.files[0];
+ if(!file.type.startsWith('image/')){
+  toast('لطفاً یک فایل تصویری انتخاب کنید', false);
+  return;
+ }
+ const reader = new FileReader();
+ reader.onload = function(e){
+  tempCustomLogo = e.target.result;
+  const prev = document.getElementById('stLogoPreview');
+  if(prev) prev.src = tempCustomLogo;
+  toast('تصویر بارگذاری شد، برای اعمال دکمه ذخیره را بزنید');
+ };
+ reader.readAsDataURL(file);
+}
+
+function resetStoreLogo(){
+ tempCustomLogo = '';
+ const prev = document.getElementById('stLogoPreview');
+ if(prev) prev.src = 'icons/easy-store-logo.png';
+ toast('لوگو به حالت پیش‌فرض برگشت؛ دکمه ذخیره را بزنید');
+}
+
+function saveStoreSettings(){
+ const nameInput = document.getElementById('stStoreName');
+ if(!nameInput) return;
+ const nameVal = nameInput.value.trim();
+ if(!nameVal){
+  toast('نام فروشگاه نمی‌تواند خالی باشد', false);
+  return;
+ }
+ settings.store_name = nameVal;
+ settings.store_phone = (document.getElementById('stStorePhone')?.value || '').trim();
+ settings.store_address = (document.getElementById('stStoreAddress')?.value || '').trim();
+ if(tempCustomLogo !== null){
+  settings.store_logo = tempCustomLogo;
+ }
+ lsSet(LS.s, settings);
+ applyStoreBranding();
+ toast('تنظیمات فروشگاه با موفقیت ذخیره شد');
+}
+
 function saveSettings(){
+
  const t=+document.getElementById('stTax').value;
  if(isNaN(t)||t<0||t>100){toast('نرخ مالیات نامعتبر است',false);return;}
  settings.income_tax_percent=t;lsSet(LS.s,settings);toast('تنظیمات ذخیره شد');
@@ -663,7 +766,7 @@ function importBackup(input){
    if(!Array.isArray(d.products)||!Array.isArray(d.invoices))throw new Error('bad');
    products=migrateProducts(d.products);invoices=d.invoices;
    expenses=Array.isArray(d.expenses)?d.expenses:[];
-   if(d.settings)settings=Object.assign(settings,d.settings);
+   if(d.settings){settings=Object.assign(settings,d.settings);applyStoreBranding();}
    lsSet(LS.p,products);lsSet(LS.i,invoices);lsSet(LS.e,expenses);lsSet(LS.s,settings);
    toast('بازیابی انجام شد');renderSettings();
  }catch(e){toast('فایل پشتیبان معتبر نیست',false);}};
