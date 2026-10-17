@@ -748,11 +748,11 @@ function renderProducts(){
    <div><label class="text-xs">قیمت فروش (بدون مالیات)</label><input id="pSale" type="number" inputmode="numeric" oninput="marginHint()"></div>
    <div><label class="text-xs">مالیات ارزش افزوده %</label><input id="pVat" type="number" inputmode="numeric" value="10" oninput="marginHint()"></div>
    <div id="marginBox" class="text-xs text-slate-300 flex items-end pb-2"></div>
-   <div><label class="text-xs">تاریخ خرید (اختیاری)</label><input id="pPDate" type="date"></div>
+   <div><label class="text-xs">تاریخ خرید (اختیاری)</label><input id="pPDate" type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off"></div>
    <div><label class="text-xs">شماره فاکتور خرید (اختیاری)</label><input id="pInvNo"></div>
    <div class="col-span-2"><label class="text-xs">نام شرکت تأمین‌کننده (اختیاری)</label><input id="pSupplier"></div>
-   <div><label class="text-xs">تاریخ شروع (تولید/ورود)</label><input id="pStart" type="date"></div>
-   <div><label class="text-xs">تاریخ انقضا</label><input id="pExp" type="date"></div>
+   <div><label class="text-xs">تاریخ شروع (تولید/ورود)</label><input id="pStart" type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off"></div>
+   <div><label class="text-xs">تاریخ انقضا</label><input id="pExp" type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off"></div>
   </div>
   <div class="flex gap-2 mt-3">
    <button class="btn btn-p flex-1" onclick="saveProduct()">ذخیره محصول</button>
@@ -853,8 +853,8 @@ function renderInventory(){
    <select onchange="invF.sup=this.value;renderInventory()"><option value="">همه تأمین‌کنندگان</option>${[...new Set(products.map(p=>p.supplier).filter(Boolean))].map(x=>`<option ${x===invF.sup?'selected':''}>${esc(x)}</option>`).join('')}</select>
    <select onchange="invF.exp=this.value;renderInventory()"><option value="">انقضا: همه</option><option value="soon" ${invF.exp==='soon'?'selected':''}>تا ۳ ماه آینده (قرمز)</option><option value="expired" ${invF.exp==='expired'?'selected':''}>منقضی‌شده</option><option value="has" ${invF.exp==='has'?'selected':''}>دارای تاریخ انقضا</option></select>
    <input placeholder="شماره فاکتور خرید" value="${esc(invF.pinv)}" onchange="invF.pinv=this.value.trim();renderInventory()">
-   <div><label class="text-xs">تاریخ خرید از</label><input type="date" value="${invF.pfrom}" onchange="invF.pfrom=this.value;renderInventory()"></div>
-   <div><label class="text-xs">تا</label><input type="date" value="${invF.pto}" onchange="invF.pto=this.value;renderInventory()"></div>
+   <div><label class="text-xs">تاریخ خرید از</label><input type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off" value="${invF.pfrom}" onchange="invF.pfrom=this.value;renderInventory()"></div>
+   <div><label class="text-xs">تا</label><input type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off" value="${invF.pto}" onchange="invF.pto=this.value;renderInventory()"></div>
   </div></div>`:''}
  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
   <div class="card p-3"><div class="text-xs text-slate-400">تعداد اقلام</div><div class="font-bold">${fmt(list.length)}</div></div>
@@ -970,6 +970,32 @@ function checkout(){
 }
 </script>
 <script>
+/* ورودی تاریخ شمسی: تایپ با کیبورد؛ مقدار (value) همچنان میلادی ISO است */
+const JD={
+ div:(a,b)=>~~(a/b),
+ g2j(gy,gm,gd){const g=[0,31,59,90,120,151,181,212,243,273,304,334];let jy=gy<=1600?0:979;gy-=gy<=1600?621:1600;const gy2=gm>2?gy+1:gy;
+  let days=365*gy+~~((gy2+3)/4)-~~((gy2+99)/100)+~~((gy2+399)/400)-80+gd+g[gm-1];jy+=33*~~(days/12053);days%=12053;jy+=4*~~(days/1461);days%=1461;
+  if(days>365){jy+=~~((days-1)/365);days=(days-1)%365;}const jm=days<186?1+~~(days/31):7+~~((days-186)/30);const jd=1+(days<186?days%31:(days-186)%30);return [jy,jm,jd];},
+ j2g(jy,jm,jd){let gy=jy<=979?621:1600;jy-=jy<=979?0:979;let days=365*jy+~~(jy/33)*8+~~(((jy%33)+3)/4)+78+jd+(jm<7?(jm-1)*31:((jm-7)*30)+186);
+  gy+=400*~~(days/146097);days%=146097;if(days>36524){gy+=100*~~(--days/36524);days%=36524;if(days>=365)days++;}
+  gy+=4*~~(days/1461);days%=1461;if(days>365){gy+=~~((days-1)/365);days=(days-1)%365;}
+  let gd=days+1;const m=[0,31,(gy%4===0&&gy%100!==0)||gy%400===0?29:28,31,30,31,30,31,31,30,31,30,31];let gm=0;for(gm=1;gm<=12&&gd>m[gm];gm++)gd-=m[gm];return [gy,gm,gd];},
+ norm:s=>String(s).replace(/[۰-۹]/g,c=>c.charCodeAt(0)-1776).replace(/[٠-٩]/g,c=>c.charCodeAt(0)-1632),
+ toShow(iso){const m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(iso||'');if(!m)return '';const [y,mo,d]=JD.g2j(+m[1],+m[2],+m[3]);return y+'/'+String(mo).padStart(2,'0')+'/'+String(d).padStart(2,'0');},
+ toIso(txt){const t=JD.norm(txt).trim();if(!t)return '';const m=/^(\d{4})\D?(\d{1,2})\D?(\d{1,2})$/.exec(t.replace(/\D+/g,'/'))||/^(\d{4})(\d\d)(\d\d)$/.exec(t);if(!m)return '';
+  let y=+m[1],mo=+m[2],d=+m[3];if(mo<1||mo>12||d<1||d>31||(mo>6&&d>30))return '';if(y>=1700){return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+  const g=JD.j2g(y,mo,d);return g[0]+'-'+String(g[1]).padStart(2,'0')+'-'+String(g[2]).padStart(2,'0');}
+};
+function enhanceDates(root){(root||document).querySelectorAll('input[data-jd]:not([data-jdok])').forEach(el=>{
+ el.dataset.jdok='1';const init=el.getAttribute('value');if(init)el.value=JD.toShow(init);
+ const desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+ Object.defineProperty(el,'value',{get(){return JD.toIso(desc.get.call(el));},set(v){desc.set.call(el,/^\d{4}-/.test(v||'')?JD.toShow(v):(v||''));},configurable:true});
+ el.addEventListener('blur',()=>{const raw=desc.get.call(el);if(!raw)return;const iso=JD.toIso(raw);if(iso){desc.set.call(el,JD.toShow(iso));}else{desc.set.call(el,'');toast('تاریخ نامعتبر؛ مثال: 1405/07/25',false);}});
+ el.addEventListener('input',()=>{});});}
+new MutationObserver(()=>enhanceDates()).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener('DOMContentLoaded',()=>enhanceDates());
+</script>
+<script>
 /* ================= مشتریان، طرح‌های فروش، فاکتور چاپی ================= */
 let customers=lsGet(LS.u,[]);
 let plans=lsGet(LS.pl,[]);
@@ -1037,7 +1063,7 @@ function renderPlans(){
  document.getElementById('content').innerHTML=`<div class="card p-4"><h2 class="font-bold mb-3">🏷 طرح‌های فروش</h2>
  <div class="grid grid-cols-2 gap-2">
  <input id="plName" class="col-span-2" placeholder="نام طرح">
- <div><label class="text-xs">از تاریخ</label><input id="plFrom" type="date"></div><div><label class="text-xs">تا تاریخ</label><input id="plTo" type="date"></div>
+ <div><label class="text-xs">از تاریخ</label><input id="plFrom" type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off"></div><div><label class="text-xs">تا تاریخ</label><input id="plTo" type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off"></div>
  <input id="plPct" type="number" min="0" max="100" placeholder="تخفیف درصدی ٪"><input id="plFix" type="number" min="0" placeholder="تخفیف ثابت (تومان)"></div>
  <p class="text-xs text-slate-400 mt-1">هر دو را می‌توان همزمان پر کرد. در هر فروش بهترین طرح فعال اعمال می‌شود.</p>
  <button class="btn btn-p w-full mt-2" onclick="savePlan()">افزودن طرح</button>
@@ -1464,7 +1490,7 @@ function renderSalesReport(){
  const pb=(k,l)=>`<button class="btn flex-1 ${rpF.period===k?'btn-p':'btn-s'}" onclick="setRp('period','${k}')">${l}</button>`;
  c.innerHTML=`<div class="card p-3 mb-3"><h3 class="font-bold mb-2">🧾 گزارش‌گیری فروش</h3>
   <div class="flex gap-2 mb-2">${pb('day','روزانه')}${pb('week','هفتگی')}${pb('month','ماهانه')}${pb('custom','بازه دلخواه')}</div>
-  ${rpF.period==='custom'?`<div class="grid grid-cols-2 gap-2 mb-2"><div><label class="text-xs">از تاریخ</label><input type="date" value="${rpF.from}" onchange="setRp('from',this.value)"></div><div><label class="text-xs">تا تاریخ</label><input type="date" value="${rpF.to}" onchange="setRp('to',this.value)"></div></div>`:''}
+  ${rpF.period==='custom'?`<div class="grid grid-cols-2 gap-2 mb-2"><div><label class="text-xs">از تاریخ</label><input type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off" value="${rpF.from}" onchange="setRp('from',this.value)"></div><div><label class="text-xs">تا تاریخ</label><input type="text" data-jd inputmode="numeric" placeholder="شمسی 1405/07/25 یا میلادی 2026/10/17" autocomplete="off" value="${rpF.to}" onchange="setRp('to',this.value)"></div></div>`:''}
   <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
    <div><label class="text-xs">گروه‌بندی بر اساس</label><select onchange="setRp('by',this.value)">${Object.entries(byLbl).map(([k,v])=>`<option value="${k}" ${rpF.by===k?'selected':''}>${v}</option>`).join('')}</select></div>
    <div><label class="text-xs">دسته / زیرگروه</label><select onchange="setRp('cat',this.value)">${catOptions(rpF.cat)}</select></div>
