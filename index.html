@@ -100,6 +100,10 @@ body.light .cat-row{border-color:#e2e8f0}
 .cat-pick{display:block;width:100%;text-align:right;background:transparent;color:inherit;border:none;padding:.55rem .5rem;border-bottom:1px solid #334155;cursor:pointer;font-size:.95rem}
 body.light .cat-pick{border-color:#e2e8f0}
 .cat-pick.sel{background:#ec489933}
+.exp-red{color:#f87171!important;font-weight:700}tr.exp-row td{background:rgba(239,68,68,.12)}
+#invModal{position:fixed;inset:0;background:rgba(2,6,23,.9);z-index:60;overflow:auto;padding:.5rem}
+#invModal .paper{background:#fff;color:#111;max-width:800px;margin:0 auto;padding:18px;border-radius:8px;direction:rtl;font-family:inherit}
+@media print{body>*:not(#invModal){display:none!important}#invModal{position:static;background:#fff;padding:0;overflow:visible}.noprint{display:none!important}#invModal .paper{max-width:none;padding:0}@page{size:A4;margin:10mm}}
 #catModal{position:fixed;inset:0;background:rgba(2,6,23,.85);z-index:55;display:flex;align-items:center;justify-content:center;padding:1rem}
 #catModal .modal-box{background:#1e293b;border:1px solid #334155;border-radius:1rem;width:100%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;padding:1rem}
 </style>
@@ -133,11 +137,12 @@ body.light .cat-pick{border-color:#e2e8f0}
 </div>
 <div id="scanModal" class="hidden"></div>
 <div id="catModal" class="hidden"></div>
+<div id="invModal" class="hidden"></div>
 <div id="toastBox"></div>
 <script>
 var DEFAULT_LOGO="data:image/webp;base64,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";
 /* ================= ذخیره‌سازی مقاوم (هرگز داده از دست نمی‌رود) ================= */
-const LS={p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings',c:'cpos_categories'};
+const LS={p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings',c:'cpos_categories',u:'cpos_customers',pl:'cpos_plans'};
 
 function applyStoreBranding(){
  const name = (settings && settings.store_name) ? settings.store_name : 'فروشگاه آسان';
@@ -184,7 +189,8 @@ function migrateProducts(list){
  return (list||[]).map(p=>({
   barcode:String(p.barcode||''),name:p.name||'',brand:p.brand||'',category:p.category||'',
   purchase_price:+p.purchase_price||0,sale_price:+p.sale_price||0,
-  vat_percent:(p.vat_percent==null?10:+p.vat_percent),stock:+p.stock||0
+  vat_percent:(p.vat_percent==null?10:+p.vat_percent),stock:+p.stock||0,
+  purchase_date:p.purchase_date||'',invoice_no:p.invoice_no||'',supplier:p.supplier||'',start_date:p.start_date||'',expiry_date:p.expiry_date||''
  }));
 }
 let products=migrateProducts(lsGet(LS.p,null));
@@ -210,11 +216,11 @@ document.getElementById('todayJ').textContent='📅 '+jdate(new Date());
 <script>
 /* ================= نقش‌ها و ناوبری (تمایز کامل مدیر/فروشنده/حسابدار) ================= */
 const USERS={
- admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','categories','products','inventory','salesreport','reports','expenses','settings']},
- seller:{pass:'1111',role:'فروشنده',cls:'role-seller',tabs:['pos','products']},
- acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['reports','salesreport','expenses','inventory','settings']}
+ admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','customers','plans','categories','products','inventory','salesreport','reports','expenses','settings']},
+ seller:{pass:'1111',role:'فروشنده',cls:'role-seller',tabs:['pos','customers','products']},
+ acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['reports','salesreport','customers','expenses','inventory','settings']}
 };
-const TAB_LABELS={pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',salesreport:'🧾 گزارش‌گیری',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
+const TAB_LABELS={customers:'👥 مشتریان',plans:'🏷 طرح‌های فروش',pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',salesreport:'🧾 گزارش‌گیری',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
 let curTab='pos';
 
 function doLogin(){
@@ -238,6 +244,8 @@ function renderTabs(){
 function renderTab(){
  if(curTab==='pos')renderPOS();
  else if(curTab==='categories')renderCategories();
+ else if(curTab==='customers')renderCustomers();
+ else if(curTab==='plans')renderPlans();
  else if(curTab==='salesreport')renderSalesReport();
  else if(curTab==='products')renderProducts();
  else if(curTab==='inventory')renderInventory();
@@ -740,6 +748,11 @@ function renderProducts(){
    <div><label class="text-xs">قیمت فروش (بدون مالیات)</label><input id="pSale" type="number" inputmode="numeric" oninput="marginHint()"></div>
    <div><label class="text-xs">مالیات ارزش افزوده %</label><input id="pVat" type="number" inputmode="numeric" value="10" oninput="marginHint()"></div>
    <div id="marginBox" class="text-xs text-slate-300 flex items-end pb-2"></div>
+   <div><label class="text-xs">تاریخ خرید (اختیاری)</label><input id="pPDate" type="date"></div>
+   <div><label class="text-xs">شماره فاکتور خرید (اختیاری)</label><input id="pInvNo"></div>
+   <div class="col-span-2"><label class="text-xs">نام شرکت تأمین‌کننده (اختیاری)</label><input id="pSupplier"></div>
+   <div><label class="text-xs">تاریخ شروع (تولید/ورود)</label><input id="pStart" type="date"></div>
+   <div><label class="text-xs">تاریخ انقضا</label><input id="pExp" type="date"></div>
   </div>
   <div class="flex gap-2 mt-3">
    <button class="btn btn-p flex-1" onclick="saveProduct()">ذخیره محصول</button>
@@ -747,7 +760,7 @@ function renderProducts(){
   </div>
  </div>
  <div class="card p-3 overflow-x-auto">
-  <table><thead><tr><th>بارکد</th><th>نام</th><th>برند</th><th>خرید</th><th>فروش</th><th>حاشیه سود</th><th>موجودی</th><th></th></tr></thead>
+  <table><thead><tr><th>بارکد</th><th>نام</th><th>برند</th><th>خرید</th><th>فروش</th><th>حاشیه سود</th><th>موجودی</th><th>انقضا</th><th></th></tr></thead>
   <tbody>${products.map((p,i)=>{
     const marg=p.sale_price-p.purchase_price;
     const margPct=p.sale_price>0?(marg/p.sale_price*100):0;
@@ -756,6 +769,7 @@ function renderProducts(){
    <td>${fmoney(p.purchase_price)}</td><td>${fmoney(p.sale_price)}</td>
    <td class="${marg<0?'text-red-400':'text-emerald-400'}">${fmoney(marg)} (${margPct.toFixed(0)}٪)</td>
    <td class="${p.stock<5?'text-red-400 font-bold':''}">${fmt(p.stock)}</td>
+   <td>${expCell(p)}</td>
    <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="editProduct(${i})">ویرایش</button><button class="btn btn-d text-xs" onclick="delProduct(${i})">حذف</button></td>
   </tr>`}).join('')}</tbody></table>
  </div>`;
@@ -768,10 +782,10 @@ function marginHint(){
 function fillForm(p){
  const set=(id,v)=>document.getElementById(id).value=v;
  set('pBarcode',p.barcode||'');set('pName',p.name||'');set('pBrand',p.brand||'');set('pCat',p.category||'');
- set('pBuy',p.purchase_price||'');set('pSale',p.sale_price||'');set('pVat',p.vat_percent??10);set('pStock',p.stock??'');
+ set('pBuy',p.purchase_price||'');set('pSale',p.sale_price||'');set('pVat',p.vat_percent??10);set('pStock',p.stock??'');set('pPDate',p.purchase_date||'');set('pInvNo',p.invoice_no||'');set('pSupplier',p.supplier||'');set('pStart',p.start_date||'');set('pExp',p.expiry_date||'');
  marginHint();
 }
-function clearForm(){['pBarcode','pName','pBrand','pCat','pBuy','pSale','pStock'].forEach(id=>document.getElementById(id).value='');document.getElementById('pVat').value=10;document.getElementById('marginBox').innerHTML='';}
+function clearForm(){['pBarcode','pName','pBrand','pCat','pBuy','pSale','pStock','pPDate','pInvNo','pSupplier','pStart','pExp'].forEach(id=>document.getElementById(id).value='');document.getElementById('pVat').value=10;document.getElementById('marginBox').innerHTML='';}
 function editProduct(i){fillForm(products[i]);window.scrollTo({top:0,behavior:'smooth'});}
 function delProduct(i){if(confirm('حذف '+products[i].name+'؟')){products.splice(i,1);lsSet(LS.p,products);toast('محصول حذف شد');renderProducts();}}
 function saveProduct(){
@@ -781,7 +795,8 @@ function saveProduct(){
  if(+g('pSale')<+g('pBuy')&&!confirm('قیمت فروش کمتر از قیمت خرید است! ثبت شود؟'))return;
  const b=g('pBarcode')||String(Date.now());
  const rec={barcode:b,name:g('pName'),brand:g('pBrand'),category:g('pCat'),
-  purchase_price:+g('pBuy')||0,sale_price:+g('pSale')||0,vat_percent:+g('pVat')||0,stock:Math.max(0,Math.round(+g('pStock')||0))};
+  purchase_price:+g('pBuy')||0,sale_price:+g('pSale')||0,vat_percent:+g('pVat')||0,stock:Math.max(0,Math.round(+g('pStock')||0)),
+  purchase_date:g('pPDate'),invoice_no:g('pInvNo'),supplier:g('pSupplier'),start_date:g('pStart'),expiry_date:g('pExp')};
  const ix=products.findIndex(p=>p.barcode===b);
  if(ix>=0)products[ix]=rec; else products.push(rec);
  lsSet(LS.p,products);clearForm();toast('ذخیره شد');renderProducts();
@@ -805,7 +820,7 @@ function scanForProduct(){openScanModal(code=>{
 </script>
 <script>
 /* ================= انبار ================= */
-let invF={cat:'',brand:'',q:''};
+let invF={cat:'',brand:'',q:'',sup:'',exp:'',pfrom:'',pto:'',pinv:''};
 const LOW_LIMIT=5;
 function catMatch(pc,sel){return !sel||pc===sel||(pc||'').startsWith(sel+' › ');}
 function allBrands(){return [...new Set(products.map(p=>(p.brand||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fa'));}
@@ -815,26 +830,31 @@ function catOptions(sel){
 }
 function brandOptions(sel){return '<option value="">همه برندها</option>'+allBrands().map(b=>`<option ${b===sel?'selected':''}>${esc(b)}</option>`).join('');}
 function stockRow(p){const low=p.stock<=LOW_LIMIT;return `<tr class="${low?'low':''}">
-  <td>${esc(p.name)}</td><td>${esc(p.brand)}</td><td class="text-xs">${esc(p.category||'—')}</td><td class="font-bold ${low?'text-red-400':''}">${fmt(p.stock)}</td>
+  <td>${esc(p.name)}</td><td>${esc(p.brand)}</td><td class="text-xs">${esc(p.category||'—')}</td><td class="font-bold ${low?'text-red-400':''}">${fmt(p.stock)}</td><td class="text-xs">${esc(p.supplier||'—')}</td><td class="text-xs">${expCell(p)}</td>
   <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',1)">+</button><button class="btn btn-s text-xs" onclick="stockAdj('${esc(p.barcode)}',-1)">−</button><button class="btn btn-a text-xs" onclick="stockSet('${esc(p.barcode)}')">تنظیم</button></td></tr>`;}
 function renderInventory(){
  const c=document.getElementById('content');
  const isAdmin=user&&user.username==='admin';
  const low=products.filter(p=>p.stock<=LOW_LIMIT).sort((a,b)=>a.stock-b.stock);
- const list=products.filter(p=>catMatch(p.category,invF.cat)&&(!invF.brand||(p.brand||'').trim()===invF.brand)&&(!invF.q||(p.name+' '+p.barcode).includes(invF.q)));
+ const list=products.filter(p=>catMatch(p.category,invF.cat)&&(!invF.brand||(p.brand||'').trim()===invF.brand)&&(!invF.q||(p.name+' '+p.barcode).includes(invF.q))&&invExtraOk(p));
  const sum=(l,k)=>l.reduce((s,p)=>s+(p[k]||0)*(p.stock||0),0);
  const qty=list.reduce((s,p)=>s+(p.stock||0),0);
  // خلاصه به تفکیک برند برای فیلتر فعلی
  const byB={};list.forEach(p=>{const k=p.brand||'بدون برند';byB[k]=byB[k]||{n:0,q:0,v:0};byB[k].n++;byB[k].q+=p.stock;byB[k].v+=p.purchase_price*p.stock;});
  c.innerHTML=`
  ${low.length?`<div class="card p-3 mb-3" style="border-color:#ef4444"><h3 class="font-bold text-red-400 mb-2">⚠️ کالاهای رو به اتمام (${fmt(LOW_LIMIT)} عدد و کمتر): ${fmt(low.length)} قلم</h3>
-  <div class="overflow-x-auto"><table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>${low.map(stockRow).join('')}</tbody></table></div></div>`
+  <div class="overflow-x-auto"><table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تأمین‌کننده</th><th>انقضا</th><th>تغییر</th></tr></thead><tbody>${low.map(stockRow).join('')}</tbody></table></div></div>`
   :`<div class="card p-3 mb-3 text-emerald-400 text-sm">✅ هیچ کالایی ${fmt(LOW_LIMIT)} عدد یا کمتر موجودی ندارد.</div>`}
  ${isAdmin?`<div class="card p-3 mb-3"><h3 class="font-bold mb-2">گزارش موجودی بر اساس دسته، زیرگروه و برند</h3>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
    <select onchange="invF.cat=this.value;renderInventory()">${catOptions(invF.cat)}</select>
    <select onchange="invF.brand=this.value;renderInventory()">${brandOptions(invF.brand)}</select>
    <input placeholder="جستجوی نام یا بارکد" value="${esc(invF.q)}" onchange="invF.q=this.value.trim();renderInventory()">
+   <select onchange="invF.sup=this.value;renderInventory()"><option value="">همه تأمین‌کنندگان</option>${[...new Set(products.map(p=>p.supplier).filter(Boolean))].map(x=>`<option ${x===invF.sup?'selected':''}>${esc(x)}</option>`).join('')}</select>
+   <select onchange="invF.exp=this.value;renderInventory()"><option value="">انقضا: همه</option><option value="soon" ${invF.exp==='soon'?'selected':''}>تا ۳ ماه آینده (قرمز)</option><option value="expired" ${invF.exp==='expired'?'selected':''}>منقضی‌شده</option><option value="has" ${invF.exp==='has'?'selected':''}>دارای تاریخ انقضا</option></select>
+   <input placeholder="شماره فاکتور خرید" value="${esc(invF.pinv)}" onchange="invF.pinv=this.value.trim();renderInventory()">
+   <div><label class="text-xs">تاریخ خرید از</label><input type="date" value="${invF.pfrom}" onchange="invF.pfrom=this.value;renderInventory()"></div>
+   <div><label class="text-xs">تا</label><input type="date" value="${invF.pto}" onchange="invF.pto=this.value;renderInventory()"></div>
   </div></div>`:''}
  <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
   <div class="card p-3"><div class="text-xs text-slate-400">تعداد اقلام</div><div class="font-bold">${fmt(list.length)}</div></div>
@@ -845,8 +865,8 @@ function renderInventory(){
  ${Object.keys(byB).length>1?`<div class="card p-3 mb-3 overflow-x-auto"><h3 class="font-bold mb-2 text-sm">خلاصه به تفکیک برند</h3><table><thead><tr><th>برند</th><th>اقلام</th><th>موجودی</th><th>ارزش خرید</th></tr></thead><tbody>
   ${Object.entries(byB).sort((a,b)=>b[1].v-a[1].v).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${fmt(v.n)}</td><td>${fmt(v.q)}</td><td>${fmoney(v.v)}</td></tr>`).join('')}</tbody></table></div>`:''}
  <div class="card p-3 overflow-x-auto">
- <table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تغییر</th></tr></thead><tbody>
- ${list.slice().sort((a,b)=>a.stock-b.stock).map(stockRow).join('')||'<tr><td colspan="5">کالایی یافت نشد</td></tr>'}</tbody></table></div>`;
+ <table><thead><tr><th>نام</th><th>برند</th><th>دسته</th><th>موجودی</th><th>تأمین‌کننده</th><th>انقضا</th><th>تغییر</th></tr></thead><tbody>
+ ${list.slice().sort((a,b)=>a.stock-b.stock).map(stockRow).join('')||'<tr><td colspan="7">کالایی یافت نشد</td></tr>'}</tbody></table></div>`;
 }
 function stockAdj(code,d){
  const p=products.find(x=>x.barcode===code);
@@ -871,10 +891,12 @@ function renderPOS(){
  </div>
  <div class="card p-3"><h2 class="font-bold mb-2">سبد خرید</h2><div id="cartRows"></div>
   <div id="cartTotals" class="border-t border-slate-600 mt-3 pt-3"></div>
+  <div class="mt-3"><label class="text-xs">مشتری</label><div class="flex gap-2"><select id="posCust" onchange="posCustChange(this.value)">${posCustOptions()}</select><button class="btn btn-s" onclick="setTab('customers')">＋</button></div><div id="custWarn"></div></div>
   <div class="mt-3"><label class="text-xs">نوع فروش / پرداخت</label><select id="payMethod"><option>نقدی</option><option>کارتخوان</option><option>کارت به کارت</option><option>نسیه</option><option>آنلاین</option></select></div>
   <button class="btn btn-p w-full mt-3" onclick="checkout()">ثبت فروش</button>
  </div><div id="receipt" class="mt-3"></div>`;
- drawCart();
+
+ drawCart();posCustChange(posCustId);
 }
 function showMatches(){
  const q=document.getElementById('posSearch').value.trim().toLowerCase();
@@ -907,7 +929,8 @@ function cartMath(){
   const line=p.sale_price*row.qty;
   net+=line;vat+=line*(p.vat_percent||0)/100;
   profit+=(p.sale_price-p.purchase_price)*row.qty;}
- return {net,vat,grand:net+vat,profit};
+ const d=calcDiscount(net);const k=net>0?(net-d.total)/net:1;
+ return {gross:net,net:net-d.total,disc:d.total,planDisc:d.plan,custDisc:d.cust,planObj:d.planObj,vat:vat*k,grand:(net-d.total)+vat*k,profit:profit-d.total};
 }
 function drawCart(){
  const rows=document.getElementById('cartRows');if(!rows)return;
@@ -917,7 +940,8 @@ function drawCart(){
  <span>${fmoney(p.sale_price*r.qty)}</span><button class="text-red-400" onclick="removeCart('${esc(p.barcode)}')">✕</button></div>`}).join(''):'<p class="text-slate-400">سبد خالی است</p>';
  const m=cartMath();
  document.getElementById('cartTotals').innerHTML=
-  `<div class="flex justify-between"><span>جمع کالا (بدون مالیات)</span><b>${fmoney(m.net)}</b></div>
+  `<div class="flex justify-between"><span>جمع کالا (بدون مالیات)</span><b>${fmoney(m.gross)}</b></div>
+   ${m.disc?`<div class="flex justify-between text-emerald-400"><span>تخفیف${m.planObj?' ('+esc(m.planObj.name)+')':''}${m.custDisc?' + تخفیف مشتری':''}</span><b>− ${fmoney(m.disc)}</b></div>`:''}
    <div class="flex justify-between text-amber-300"><span>مالیات ارزش افزوده</span><b>${fmoney(m.vat)}</b></div>
    <div class="flex justify-between text-lg text-pink-400"><span>مبلغ قابل پرداخت</span><b>${fmoney(m.grand)}</b></div>`;
 }
@@ -928,8 +952,10 @@ function checkout(){
  const items=cart.map(r=>{const p=products.find(x=>x.barcode===r.barcode);
   const line=p.sale_price*r.qty;
   return {barcode:p.barcode,name:p.name,brand:p.brand,category:p.category||'',qty:r.qty,purchase_price:p.purchase_price,sale_price:p.sale_price,vat_percent:p.vat_percent,
-   line_total:line,vat:line*(p.vat_percent||0)/100,cogs:p.purchase_price*r.qty,gross_profit:(p.sale_price-p.purchase_price)*r.qty};});
- const inv={id:Date.now(),date:new Date().toISOString(),jalali_date:jdate(new Date()),
+   line_total:line,disc:m.gross>0?m.disc*line/m.gross:0,vat:line*(p.vat_percent||0)/100*(m.gross>0?m.net/m.gross:1),cogs:p.purchase_price*r.qty,gross_profit:(p.sale_price-p.purchase_price)*r.qty-(m.gross>0?m.disc*line/m.gross:0)};});
+ const cu=customers.find(x=>String(x.id)===String(posCustId));
+ settings.inv_seq=(settings.inv_seq||0)+1;lsSet(LS.s,settings);
+ const inv={id:Date.now(),no:'F-'+String(settings.inv_seq).padStart(6,'0'),customer_id:cu?cu.id:null,customer_name:cu?custFull(cu):'',customer_nid:cu?cu.national_id||'':'',plan_name:m.planObj?m.planObj.name:'',discount:m.disc,plan_discount:m.planDisc,cust_discount:m.custDisc,gross_total:m.gross,date:new Date().toISOString(),jalali_date:jdate(new Date()),
   seller:user.username,seller_name:user.role,pay_method:(document.getElementById('payMethod')||{}).value||'نقدی',items,
   revenue:m.net,cogs:items.reduce((s,i)=>s+i.cogs,0),
   gross_profit:m.profit,vat:m.vat,total:m.grand};
@@ -939,8 +965,138 @@ function checkout(){
   <h3 class="font-bold mb-1">✅ فروش ثبت شد</h3>
   <p class="text-sm">فاکتور: ${fmt(inv.id)}</p><p class="text-sm">تاریخ: ${jdatetime(inv.date)}</p><p class="text-sm">فروشنده: ${esc(inv.seller_name)}</p>
   <p class="text-sm">مبلغ کالا: ${fmoney(inv.revenue)}</p><p class="text-sm text-amber-300">مالیات: ${fmoney(inv.vat)}</p>
-  <b class="text-pink-400">مبلغ نهایی: ${fmoney(inv.total)}</b></div>`;
+  <b class="text-pink-400">مبلغ نهایی: ${fmoney(inv.total)}</b><button class="btn btn-p w-full mt-2" onclick="showInvoice(${inv.id})">🖨 نمایش / چاپ فاکتور</button></div>`;
  toast('فروش با موفقیت ثبت شد');
+}
+</script>
+<script>
+/* ================= مشتریان، طرح‌های فروش، فاکتور چاپی ================= */
+let customers=lsGet(LS.u,[]);
+let plans=lsGet(LS.pl,[]);
+let posCustId='';
+let tempSeal=null;
+const custFull=u=>u?(u.name+(u.mobile?' - '+u.mobile:'')):'';
+const custName=i=>i.customer_name||'مشتری حضوری';
+const invNo=i=>i.no||('#'+i.id);
+const daysTo=d=>Math.ceil((new Date(d+'T00:00:00')-new Date())/864e5);
+const expState=p=>{if(!p.expiry_date)return '';const d=daysTo(p.expiry_date);return d<0?'expired':(d<=92?'soon':'ok');};
+function expCell(p){const s=expState(p);if(!p.expiry_date)return '—';
+ return `<span class="${s==='ok'?'':'exp-red'}">${jdate(new Date(p.expiry_date+'T00:00:00'))}${s==='expired'?' (منقضی)':''}</span>`;}
+function invExtraOk(p){
+ if(invF.sup&&p.supplier!==invF.sup)return false;
+ if(invF.pinv&&!(p.invoice_no||'').includes(invF.pinv))return false;
+ if(invF.pfrom&&(!p.purchase_date||p.purchase_date<invF.pfrom))return false;
+ if(invF.pto&&(!p.purchase_date||p.purchase_date>invF.pto))return false;
+ if(invF.exp==='soon'&&!['soon','expired'].includes(expState(p)))return false;
+ if(invF.exp==='expired'&&expState(p)!=='expired')return false;
+ if(invF.exp==='has'&&!p.expiry_date)return false;
+ return true;}
+/* ---- تخفیف ---- */
+function planActive(pl,t){const d=new Date(t).toISOString().slice(0,10);return pl.active!==false&&(!pl.from||pl.from<=d)&&(!pl.to||pl.to>=d);}
+function planValue(pl,base){return Math.min(base,base*(+pl.percent||0)/100+(+pl.fixed||0));}
+function calcDiscount(base){
+ let best=null,bv=0;
+ for(const pl of plans){if(!planActive(pl,Date.now()))continue;const v=planValue(pl,base);if(v>bv){bv=v;best=pl;}}
+ const cu=customers.find(x=>String(x.id)===String(posCustId));
+ const cd=cu&&cu.discount?(base-bv)*(+cu.discount)/100:0;
+ return {plan:Math.round(bv),cust:Math.round(cd),total:Math.round(bv+cd),planObj:best};}
+function posCustOptions(){return `<option value="">مشتری حضوری (بدون ثبت)</option>`+customers.map(u=>`<option value="${u.id}" ${String(u.id)===String(posCustId)?'selected':''}>${esc(custFull(u))}</option>`).join('');}
+function posCustChange(v){posCustId=v;const u=customers.find(x=>String(x.id)===String(v));
+ const w=document.getElementById('custWarn');
+ if(w){const msg=[];if(u){if(u.discount)msg.push(`تخفیف اختصاصی این مشتری: ${u.discount}٪`);
+  if(u.type==='legal'&&(!u.national_id||!u.reg_no))msg.push('⚠️ مشتری حقوقی: شناسهٔ ملی/شمارهٔ ثبت ناقص است');
+  if(u.type==='real'&&!u.national_id)msg.push('⚠️ کد ملی مشتری ثبت نشده است');}
+  w.innerHTML=msg.map(x=>`<p class="text-xs text-amber-300 mt-1">${x}</p>`).join('');}
+ if(typeof drawCart==='function')drawCart();}
+/* ---- مشتریان ---- */
+function renderCustomers(){
+ const ro=user.username==='acc';
+ document.getElementById('content').innerHTML=`<div class="card p-4"><h2 class="font-bold mb-3">👥 مشتریان</h2>
+ ${ro?'':`<div class="grid grid-cols-2 gap-2">
+  <input id="cName" placeholder="نام و نام خانوادگی / شرکت"><input id="cMobile" placeholder="موبایل" inputmode="tel">
+  <select id="cType"><option value="real">حقیقی</option><option value="legal">حقوقی</option></select>
+  <input id="cNid" placeholder="کد ملی / شناسهٔ ملی"><input id="cReg" placeholder="شمارهٔ ثبت (حقوقی)">
+  <input id="cDisc" type="number" min="0" max="100" placeholder="تخفیف مشتری ٪">
+  <textarea id="cAddr" class="col-span-2" placeholder="آدرس"></textarea></div>
+  <input type="hidden" id="cEdit"><button class="btn btn-p w-full mt-2" onclick="saveCustomer()">ذخیره مشتری</button>`}
+ <div class="overflow-x-auto mt-3"><table><thead><tr><th>نام</th><th>موبایل</th><th>نوع</th><th>کد ملی</th><th>تخفیف</th><th></th></tr></thead><tbody>
+ ${customers.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.mobile||'')}</td><td>${u.type==='legal'?'حقوقی':'حقیقی'}</td><td>${esc(u.national_id||'')}</td><td>${u.discount||0}٪</td><td>${ro?'':`<button class="btn btn-s text-xs" onclick="editCustomer(${u.id})">ویرایش</button> <button class="btn btn-d text-xs" onclick="delCustomer(${u.id})">حذف</button>`}</td></tr>`).join('')||'<tr><td colspan=6>مشتری ثبت نشده</td></tr>'}
+ </tbody></table></div></div>`;}
+function saveCustomer(){
+ const g=id=>document.getElementById(id).value.trim();
+ if(!g('cName')){toast('نام مشتری را وارد کنید',false);return;}
+ const eid=g('cEdit');const o={id:eid?+eid:Date.now(),name:g('cName'),mobile:g('cMobile'),type:g('cType'),national_id:g('cNid'),reg_no:g('cReg'),address:g('cAddr'),discount:Math.min(100,Math.max(0,+g('cDisc')||0))};
+ const i=customers.findIndex(x=>x.id===o.id);if(i>=0)customers[i]=o;else customers.push(o);
+ lsSet(LS.u,customers);toast('ذخیره شد');renderCustomers();}
+function editCustomer(id){const u=customers.find(x=>x.id===id);if(!u)return;
+ const s=(k,v)=>document.getElementById(k).value=v??'';
+ s('cName',u.name);s('cMobile',u.mobile);s('cType',u.type);s('cNid',u.national_id);s('cReg',u.reg_no);s('cAddr',u.address);s('cDisc',u.discount);s('cEdit',u.id);window.scrollTo(0,0);}
+function delCustomer(id){if(!confirm('این مشتری حذف شود؟'))return;customers=customers.filter(x=>x.id!==id);lsSet(LS.u,customers);renderCustomers();}
+/* ---- طرح‌ها ---- */
+function renderPlans(){
+ document.getElementById('content').innerHTML=`<div class="card p-4"><h2 class="font-bold mb-3">🏷 طرح‌های فروش</h2>
+ <div class="grid grid-cols-2 gap-2">
+ <input id="plName" class="col-span-2" placeholder="نام طرح">
+ <div><label class="text-xs">از تاریخ</label><input id="plFrom" type="date"></div><div><label class="text-xs">تا تاریخ</label><input id="plTo" type="date"></div>
+ <input id="plPct" type="number" min="0" max="100" placeholder="تخفیف درصدی ٪"><input id="plFix" type="number" min="0" placeholder="تخفیف ثابت (تومان)"></div>
+ <p class="text-xs text-slate-400 mt-1">هر دو را می‌توان همزمان پر کرد. در هر فروش بهترین طرح فعال اعمال می‌شود.</p>
+ <button class="btn btn-p w-full mt-2" onclick="savePlan()">افزودن طرح</button>
+ <div class="overflow-x-auto mt-3"><table><thead><tr><th>نام</th><th>بازه</th><th>درصد</th><th>ثابت</th><th>وضعیت</th><th></th></tr></thead><tbody>
+ ${plans.map(p=>`<tr><td>${esc(p.name)}</td><td class="text-xs">${p.from?jdate(new Date(p.from)):'—'} تا ${p.to?jdate(new Date(p.to)):'—'}</td><td>${p.percent||0}٪</td><td>${fmoney(p.fixed||0)}</td><td>${planActive(p,Date.now())?'✅ فعال':'⏸'}</td><td><button class="btn btn-d text-xs" onclick="delPlan(${p.id})">حذف</button></td></tr>`).join('')||'<tr><td colspan=6>طرحی ثبت نشده</td></tr>'}
+ </tbody></table></div></div>`;}
+function savePlan(){const g=id=>document.getElementById(id).value.trim();
+ if(!g('plName')||(!+g('plPct')&&!+g('plFix'))){toast('نام و مقدار تخفیف لازم است',false);return;}
+ plans.push({id:Date.now(),name:g('plName'),from:g('plFrom'),to:g('plTo'),percent:Math.min(100,+g('plPct')||0),fixed:+g('plFix')||0});
+ lsSet(LS.pl,plans);renderPlans();}
+function delPlan(id){plans=plans.filter(x=>x.id!==id);lsSet(LS.pl,plans);renderPlans();}
+/* ---- مهر ---- */
+function previewSeal(input){const f=input.files&&input.files[0];if(!f||!f.type.startsWith('image/')){toast('تصویر انتخاب کنید',false);return;}
+ const r=new FileReader();r.onload=e=>{tempSeal=e.target.result;const p=document.getElementById('stSealPreview');if(p)p.src=tempSeal;toast('برای اعمال، ذخیره را بزنید');};r.readAsDataURL(f);}
+function clearSeal(){tempSeal='';const p=document.getElementById('stSealPreview');if(p)p.removeAttribute('src');toast('برای اعمال، ذخیره را بزنید');}
+/* ---- عدد به حروف ---- */
+function numWords(n){n=Math.round(n);if(n===0)return 'صفر';
+ const o=['','یک','دو','سه','چهار','پنج','شش','هفت','هشت','نه','ده','یازده','دوازده','سیزده','چهارده','پانزده','شانزده','هفده','هجده','نوزده'];
+ const t=['','','بیست','سی','چهل','پنجاه','شصت','هفتاد','هشتاد','نود'];
+ const h=['','صد','دویست','سیصد','چهارصد','پانصد','ششصد','هفتصد','هشتصد','نهصد'];
+ const three=x=>{const p=[];if(x>=100)p.push(h[Math.floor(x/100)]);x%=100;if(x>=20){p.push(t[Math.floor(x/10)]);if(x%10)p.push(o[x%10]);}else if(x)p.push(o[x]);return p.join(' و ');};
+ const sc=['','هزار','میلیون','میلیارد','تریلیون'];const parts=[];let i=0;
+ while(n>0){const c=n%1000;if(c)parts.unshift(three(c)+(sc[i]?' '+sc[i]:''));n=Math.floor(n/1000);i++;}
+ return parts.join(' و ');}
+/* ---- فاکتور ---- */
+function showInvoice(id){
+ const inv=invoices.find(x=>x.id===id);if(!inv)return;
+ const d=new Date(inv.date),cu=customers.find(x=>x.id===inv.customer_id);
+ const th='background:#1e3a8a;color:#fff;padding:6px;border:1px solid #1e3a8a',td='padding:5px;border:1px solid #cbd5e1;text-align:center';
+ const rows=inv.items.map((it,k)=>{const lt=(it.line_total||0)-(it.disc||0);return `<tr><td style="${td}">${fmt(k+1)}</td><td style="${td}">${esc(it.barcode)}</td><td style="${td};text-align:right">${esc(it.name)}</td><td style="${td}">${fmt(it.qty)}</td><td style="${td}">${fmt(it.sale_price)}</td><td style="${td}">${fmt(Math.round(lt))}</td></tr>`;}).join('');
+ const row=(a,b,s='')=>`<div style="display:flex;justify-content:space-between;padding:3px 0;${s}"><span>${a}</span><b>${b}</b></div>`;
+ document.getElementById('invModal').innerHTML=`<div class="noprint" style="max-width:800px;margin:0 auto 8px;display:flex;gap:6px;flex-wrap:wrap">
+  <button class="btn btn-p" onclick="window.print()">🖨 چاپ / PDF</button><button class="btn btn-s" onclick="shareInvoice(${id})">📤 اشتراک‌گذاری</button><button class="btn btn-d" onclick="closeInvoice()">بستن</button></div>
+ <div class="paper" id="invPaper"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+  <div style="display:flex;align-items:center;gap:8px"><img src="${settings.store_logo||DEFAULT_LOGO}" style="width:64px;height:64px;object-fit:contain"><div><b style="font-size:18px">${esc(settings.store_name||'')}</b><div style="font-size:12px">${esc(settings.store_phone||'')} ${esc(settings.store_address||'')}</div></div></div>
+  <div style="text-align:left;font-size:13px"><div>شمارهٔ فاکتور: <b>${esc(invNo(inv))}</b></div><div>تاریخ: ${jdate(d)}</div></div></div>
+  <div style="margin:10px 0;padding:6px;background:#f1f5f9;border-radius:6px;font-size:13px">خریدار: <b>${esc(inv.customer_name||'مشتری حضوری')}</b>${(inv.customer_nid||cu&&cu.national_id)?' — کد/شناسهٔ ملی: '+esc(inv.customer_nid||cu.national_id):''} — تاریخ خرید: ${jdate(d)}</div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="${th}">ردیف</th><th style="${th}">بارکد</th><th style="${th}">نام کالا</th><th style="${th}">تعداد</th><th style="${th}">قیمت واحد</th><th style="${th}">جمع</th></tr></thead><tbody>${rows}</tbody></table>
+  ${settings.store_seal?`<div style="margin-top:8px"><img src="${settings.store_seal}" style="max-height:110px;max-width:200px"></div>`:''}
+  <div style="margin-top:10px;max-width:320px;margin-right:auto;font-size:13px">${row('جمع کالا',fmoney(inv.gross_total||inv.revenue))}${inv.discount?row('تخفیف'+(inv.plan_name?' ('+esc(inv.plan_name)+')':''),'− '+fmoney(inv.discount)):''}${row('مالیات',fmoney(inv.vat))}${row('مبلغ نهایی',fmoney(inv.total),'border-top:1px solid #111;font-size:15px')}</div>
+  <div style="margin-top:6px;font-size:13px">مبلغ به حروف: <b>${numWords(inv.total)} تومان</b></div></div>`;
+ document.getElementById('invModal').classList.remove('hidden');}
+function closeInvoice(){const m=document.getElementById('invModal');m.classList.add('hidden');m.innerHTML='';}
+async function shareInvoice(id){
+ const inv=invoices.find(x=>x.id===id);const paper=document.getElementById('invPaper');
+ const text=`فاکتور ${invNo(inv)} - ${settings.store_name||''}\nمبلغ: ${fmoney(inv.total)}`;
+ try{
+  const w=paper.offsetWidth,h=paper.offsetHeight,c=paper.cloneNode(true);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="direction:rtl;font-family:sans-serif;background:#fff;color:#111;padding:18px;box-sizing:border-box;width:${w}px">${new XMLSerializer().serializeToString(c).replace(/^<div[^>]*>/,'').replace(/<\/div>$/,'')}</div></foreignObject></svg>`;
+  const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});
+  const cv=document.createElement('canvas');cv.width=w*2;cv.height=h*2;const x=cv.getContext('2d');x.scale(2,2);x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0);
+  const blob=await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(),'image/png'));
+  const file=new File([blob],'invoice-'+invNo(inv)+'.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text});return;}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=file.name;a.click();toast('تصویر فاکتور دانلود شد');
+ }catch(e){
+  if(e&&e.name==='AbortError')return;
+  if(navigator.share){try{await navigator.share({text});return;}catch(_){}}
+  toast('اشتراک تصویر ممکن نشد؛ از «چاپ / PDF» استفاده کنید',false);}
 }
 </script>
 <script>
@@ -1087,6 +1243,16 @@ function renderSettings(){
      </div>
     </div>
    </div>
+   <div class="pt-2 border-t border-slate-700">
+    <label class="text-xs block mb-2 font-bold">مهر / امضا (زیر آخرین ردیف فاکتور چاپی)</label>
+    <div class="flex items-center gap-4 flex-wrap">
+     <div class="w-24 h-24 bg-white rounded-lg flex items-center justify-center p-2 border border-slate-700"><img id="stSealPreview" src="${settings.store_seal||''}" class="max-w-full max-h-full object-contain" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'"></div>
+     <div class="flex-1 min-w-[200px] flex flex-col gap-2">
+      <label class="btn btn-s text-center cursor-pointer"><span>انتخاب تصویر مهر</span><input type="file" accept="image/*" class="hidden" onchange="previewSeal(this)"></label>
+      <button type="button" class="btn btn-d text-xs" onclick="clearSeal()">حذف مهر</button>
+     </div>
+    </div>
+   </div>
   </div>
   <button class="btn btn-p w-full mt-3" onclick="saveStoreSettings()">ذخیره مشخصات فروشگاه</button>
  </div>`;
@@ -1157,6 +1323,7 @@ function saveStoreSettings(){
  if(tempCustomLogo !== null){
   settings.store_logo = tempCustomLogo;
  }
+ if(tempSeal !== null) settings.store_seal = tempSeal;
  lsSet(LS.s, settings);
  applyStoreBranding();
  toast('تنظیمات فروشگاه با موفقیت ذخیره شد');
@@ -1169,7 +1336,7 @@ function saveSettings(){
  settings.income_tax_percent=t;lsSet(LS.s,settings);toast('تنظیمات ذخیره شد');
 }
 function exportBackup(){
- const blob=new Blob([JSON.stringify({app:'cosmetics-pos',version:3,products,categories,invoices,expenses,settings,exported_at:new Date().toISOString(),jalali:jdate(new Date())},null,2)],{type:'application/json'});
+ const blob=new Blob([JSON.stringify({app:'cosmetics-pos',version:4,products,categories,customers,plans,invoices,expenses,settings,exported_at:new Date().toISOString(),jalali:jdate(new Date())},null,2)],{type:'application/json'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
  a.download='cosmetics-pos-backup-'+jdate(new Date()).replace(/[\/]/g,'-')+'.json';a.click();
  toast('پشتیبان دانلود شد');
@@ -1182,6 +1349,8 @@ function importBackup(input){
    if(!Array.isArray(d.products)||!Array.isArray(d.invoices))throw new Error('bad');
    products=migrateProducts(d.products);invoices=d.invoices;
    expenses=Array.isArray(d.expenses)?d.expenses:[];
+   if(Array.isArray(d.customers)){customers=d.customers;lsSet(LS.u,customers);}
+   if(Array.isArray(d.plans)){plans=d.plans;lsSet(LS.pl,plans);}
    if(Array.isArray(d.categories)){categories=d.categories;lsSet(LS.c,categories);}
    if(d.settings){settings=Object.assign(settings,d.settings);applyStoreBranding();applyTheme();}
    lsSet(LS.p,products);lsSet(LS.i,invoices);lsSet(LS.e,expenses);lsSet(LS.s,settings);
@@ -1193,7 +1362,7 @@ function importBackup(input){
 function resetAll(){
  if(!confirm('همه محصولات، فاکتورها و هزینه‌ها پاک شوند؟ این عمل قابل بازگشت نیست!'))return;
  if(!confirm('مطمئن هستید؟ ابتدا پشتیبان بگیرید.'))return;
- products=[];invoices=[];expenses=[];
+ products=[];invoices=[];expenses=[];customers=[];plans=[];lsSet(LS.u,customers);lsSet(LS.pl,plans);
  lsSet(LS.p,products);lsSet(LS.i,invoices);lsSet(LS.e,expenses);
  toast('داده‌ها پاک شد');renderTab();
 }
@@ -1261,7 +1430,7 @@ function closeCatPicker(){const m=document.getElementById('catModal');m.classLis
 </script>
 <script>
 /* ================= گزارش‌گیری فروش و سود و زیان ================= */
-let rpF={period:'day',from:'',to:'',by:'product',cat:'',brand:'',pay:''};
+let rpF={period:'day',from:'',to:'',by:'product',cat:'',brand:'',pay:'',cust:'',plan:''};
 function dayStart(d){d=new Date(d);d.setHours(0,0,0,0);return d;}
 function rpRange(){
  const now=new Date();let from,to=new Date(now);to.setHours(23,59,59,999);
@@ -1277,19 +1446,19 @@ function itemBrand(it){if(it.brand)return it.brand;const p=products.find(x=>x.ba
 function setRp(k,v){rpF[k]=v;renderSalesReport();}
 function renderSalesReport(){
  const c=document.getElementById('content');const {from,to}=rpRange();
- const invs=invoices.filter(i=>{const d=new Date(i.date);return d>=from&&d<=to&&(!rpF.pay||(i.pay_method||'نقدی')===rpF.pay);});
+ const invs=invoices.filter(i=>{const d=new Date(i.date);return d>=from&&d<=to&&(!rpF.pay||(i.pay_method||'نقدی')===rpF.pay)&&(!rpF.cust||String(i.customer_id||'')===rpF.cust)&&(!rpF.plan||(i.plan_name||'')===rpF.plan);});
  // اقلام فیلترشده
  const rows=[];invs.forEach(i=>(i.items||[]).forEach(it=>{const cat=itemCat(it),br=itemBrand(it);
   if(!catMatch(cat,rpF.cat))return;if(rpF.brand&&br!==rpF.brand)return;
-  const rev=it.line_total??(it.sale_price||0)*(it.qty||0),cogs=it.cogs??(it.purchase_price||0)*(it.qty||0);
-  rows.push({inv:i,name:it.name,barcode:it.barcode,cat:cat||'بدون دسته',brand:br||'بدون برند',pay:i.pay_method||'نقدی',qty:it.qty||0,rev,cogs,vat:it.vat||0,profit:rev-cogs});}));
+  const rev=(it.line_total??(it.sale_price||0)*(it.qty||0))-(it.disc||0),cogs=it.cogs??(it.purchase_price||0)*(it.qty||0);
+  rows.push({inv:i,cust:custName(i),plan:i.plan_name||'بدون طرح',name:it.name,barcode:it.barcode,cat:cat||'بدون دسته',brand:br||'بدون برند',pay:i.pay_method||'نقدی',qty:it.qty||0,rev,cogs,vat:it.vat||0,profit:rev-cogs});}));
  const tot=rows.reduce((a,r)=>{a.qty+=r.qty;a.rev+=r.rev;a.cogs+=r.cogs;a.vat+=r.vat;a.profit+=r.profit;return a;},{qty:0,rev:0,cogs:0,vat:0,profit:0});
  const filtered=rpF.cat||rpF.brand;
  const exp=filtered?0:expenses.filter(e=>{const d=new Date(e.date);return d>=from&&d<=to;}).reduce((s,e)=>s+(+e.amount||0),0);
  const net=tot.profit-exp;
- const keyOf={product:r=>r.name,category:r=>r.cat,brand:r=>r.brand,pay:r=>r.pay,day:r=>jdate(new Date(r.inv.date))};
+ const keyOf={product:r=>r.name,category:r=>r.cat,brand:r=>r.brand,pay:r=>r.pay,customer:r=>r.cust,plan:r=>r.plan,day:r=>jdate(new Date(r.inv.date))};
  const grp={};rows.forEach(r=>{const k=keyOf[rpF.by](r);const g=grp[k]=grp[k]||{qty:0,rev:0,cogs:0,profit:0,inv:new Set()};g.qty+=r.qty;g.rev+=r.rev;g.cogs+=r.cogs;g.profit+=r.profit;g.inv.add(r.inv.id);});
- const byLbl={product:'محصول',category:'دسته',brand:'برند',pay:'نوع فروش',day:'روز'};
+ const byLbl={product:'محصول',category:'دسته',brand:'برند',pay:'نوع فروش',customer:'مشتری',plan:'طرح فروش',day:'روز'};
  const ent=Object.entries(grp).sort((a,b)=>rpF.by==='day'?0:b[1].rev-a[1].rev);
  const pays=[...new Set(['نقدی','کارتخوان','کارت به کارت','نسیه','آنلاین',...invoices.map(i=>i.pay_method||'نقدی')])];
  const pb=(k,l)=>`<button class="btn flex-1 ${rpF.period===k?'btn-p':'btn-s'}" onclick="setRp('period','${k}')">${l}</button>`;
@@ -1301,6 +1470,8 @@ function renderSalesReport(){
    <div><label class="text-xs">دسته / زیرگروه</label><select onchange="setRp('cat',this.value)">${catOptions(rpF.cat)}</select></div>
    <div><label class="text-xs">برند</label><select onchange="setRp('brand',this.value)">${brandOptions(rpF.brand)}</select></div>
    <div><label class="text-xs">نوع فروش</label><select onchange="setRp('pay',this.value)"><option value="">همه</option>${pays.map(p=>`<option ${p===rpF.pay?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+   <div><label class="text-xs">مشتری</label><select onchange="setRp('cust',this.value)"><option value="">همه</option>${customers.map(u=>`<option value="${u.id}" ${String(u.id)===rpF.cust?'selected':''}>${esc(custFull(u))}</option>`).join('')}</select></div>
+   <div><label class="text-xs">طرح فروش</label><select onchange="setRp('plan',this.value)"><option value="">همه</option>${[...new Set(invoices.map(i=>i.plan_name).filter(Boolean))].map(x=>`<option ${x===rpF.plan?'selected':''}>${esc(x)}</option>`).join('')}</select></div>
   </div>
   <p class="text-xs text-slate-400 mt-2">بازه: ${jdate(from)} تا ${jdate(to)}</p></div>
  <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
@@ -1320,7 +1491,8 @@ function renderSalesReport(){
   <table><thead><tr><th>${byLbl[rpF.by]}</th><th>فاکتور</th><th>تعداد</th><th>فروش</th><th>بهای تمام‌شده</th><th>سود</th></tr></thead><tbody>
   ${ent.map(([k,g])=>`<tr><td>${esc(k)}</td><td>${fmt(g.inv.size)}</td><td>${fmt(g.qty)}</td><td>${fmoney(g.rev)}</td><td>${fmoney(g.cogs)}</td><td class="${g.profit>=0?'text-emerald-400':'text-red-400'}">${fmoney(g.profit)}</td></tr>`).join('')||'<tr><td colspan="6">در این بازه فروشی ثبت نشده</td></tr>'}
   </tbody></table>
-  <button class="btn btn-s w-full mt-3" onclick="exportSalesCsv()">⬇️ دریافت فایل اکسل (CSV)</button></div>`;
+  <button class="btn btn-s w-full mt-3" onclick="exportSalesCsv()">⬇️ دریافت فایل اکسل (CSV)</button></div>
+ <div class="card p-3 mt-3 overflow-x-auto"><h3 class="font-bold mb-2">فاکتورهای این بازه</h3><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>تخفیف</th><th>مبلغ</th><th></th></tr></thead><tbody>${[...new Map(rows.map(r=>[r.inv.id,r.inv])).values()].map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${fmoney(i.discount||0)}</td><td>${fmoney(i.total)}</td><td><button class="btn btn-p text-xs" onclick="showInvoice(${i.id})">🖨 فاکتور</button></td></tr>`).join('')||'<tr><td colspan=6>—</td></tr>'}</tbody></table></div>`;
  window._rpRows=rows;
 }
 function exportSalesCsv(){
