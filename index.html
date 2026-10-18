@@ -129,6 +129,7 @@ body.light .cat-pick{border-color:#e2e8f0}
   <div class="flex gap-2 items-center text-sm">
    <span id="whoami" class="badge role-admin"></span>
    <span id="todayJ" class="text-xs text-slate-400"></span>
+   <button id="chPassBtn" class="btn btn-s hidden" onclick="changeMyPass()">🔑 تغییر رمز</button>
    <button class="btn btn-s" onclick="logout()">خروج</button>
   </div>
  </div>
@@ -142,7 +143,7 @@ body.light .cat-pick{border-color:#e2e8f0}
 <script>
 var DEFAULT_LOGO="data:image/webp;base64,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";
 /* ================= ذخیره‌سازی مقاوم (هرگز داده از دست نمی‌رود) ================= */
-const LS={p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings',c:'cpos_categories',u:'cpos_customers',pl:'cpos_plans'};
+const LS={sel:'cpos_sellers',p:'cpos_products',i:'cpos_invoices',e:'cpos_expenses',s:'cpos_settings',c:'cpos_categories',u:'cpos_customers',pl:'cpos_plans'};
 
 function applyStoreBranding(){
  const name = (settings && settings.store_name) ? settings.store_name : 'فروشگاه آسان';
@@ -216,24 +217,77 @@ document.getElementById('todayJ').textContent='📅 '+jdate(new Date());
 <script>
 /* ================= نقش‌ها و ناوبری (تمایز کامل مدیر/فروشنده/حسابدار) ================= */
 const USERS={
- admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','customers','plans','categories','products','inventory','salesreport','reports','expenses','settings']},
- seller:{pass:'1111',role:'فروشنده',cls:'role-seller',tabs:['pos','customers','products']},
- acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['reports','salesreport','customers','expenses','inventory','settings']}
+ admin:{pass:'1234',role:'مدیر',cls:'role-admin',tabs:['pos','invoices','customers','plans','categories','products','inventory','salesreport','reports','expenses','settings']},
+ seller:{pass:'1111',role:'فروشنده',cls:'role-seller',tabs:['pos','invoices','customers','products']},
+ acc:{pass:'2222',role:'حسابدار',cls:'role-acc',tabs:['invoices','reports','salesreport','customers','expenses','inventory','settings']}
 };
-const TAB_LABELS={customers:'👥 مشتریان',plans:'🏷 طرح‌های فروش',pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',salesreport:'🧾 گزارش‌گیری',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
+const SELLER_TABS=['pos','invoices','customers','products'];
+const TAB_LABELS={invoices:'🧾 فاکتورها',customers:'👥 مشتریان',plans:'🏷 طرح‌های فروش',pos:'🛒 صندوق فروش',categories:'🗂 دسته محصولات',products:'📦 محصولات',inventory:'📊 موجودی',salesreport:'🧾 گزارش‌گیری',reports:'📈 حسابداری و سود و زیان',expenses:'💸 هزینه‌ها',settings:'⚙ تنظیمات'};
 let curTab='pos';
 
 function doLogin(){
  const u=document.getElementById('liUser').value.trim().toLowerCase();
  const p=document.getElementById('liPass').value.trim();
  const err=document.getElementById('liErr');
- if(USERS[u]&&USERS[u].pass===p){
+ const sl=sellers.find(x=>x.username===u&&x.pass===p);
+ if(!(USERS[u]&&USERS[u].pass===p)&&sl){
+  user={username:u,role:'فروشنده',cls:'role-seller',tabs:SELLER_TABS,isSeller:true};
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  const w=document.getElementById('whoami');w.textContent=user.role;w.className='badge '+user.cls;
+  document.getElementById('chPassBtn').classList.remove('hidden');
+  curTab=user.tabs[0];renderTabs();renderTab();err.textContent='';
+ } else if(USERS[u]&&USERS[u].pass===p){
   user={username:u,...USERS[u]};
+  document.getElementById('chPassBtn').classList.add('hidden');
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('appView').classList.remove('hidden');
   const w=document.getElementById('whoami');w.textContent=user.role;w.className='badge '+user.cls;
   curTab=user.tabs[0];renderTabs();renderTab();err.textContent='';
  } else {err.textContent='نام کاربری یا رمز نادرست است';}
+}
+let sellers=lsGet(LS.sel,[]);
+function saveSellers(){lsSet(LS.sel,sellers);}
+function changeMyPass(){
+ const cur=prompt('رمز فعلی را وارد کنید:');if(cur===null)return;
+ const me=sellers.find(x=>x.username===user.username);
+ if(!me||me.pass!==cur){toast('رمز فعلی نادرست است',false);return;}
+ const np=prompt('رمز جدید (حداقل ۴ کاراکتر):');if(np===null)return;
+ if(np.trim().length<4){toast('رمز باید حداقل ۴ کاراکتر باشد',false);return;}
+ const np2=prompt('تکرار رمز جدید:');if(np2===null)return;
+ if(np2!==np){toast('تکرار رمز یکسان نیست',false);return;}
+ me.pass=np.trim();saveSellers();toast('رمز شما تغییر کرد');
+}
+function addSeller(){
+ if(!isAdmin())return;
+ if(sellers.length>=5){toast('حداکثر ۵ فروشنده می‌توان تعریف کرد',false);return;}
+ const u=(document.getElementById('slUser').value||'').trim().toLowerCase();
+ const p=(document.getElementById('slPass').value||'').trim();
+ if(!/^[a-z0-9_]{3,20}$/.test(u)){toast('نام کاربری: ۳ تا ۲۰ حرف انگلیسی/عدد/_',false);return;}
+ if(USERS[u]||sellers.some(x=>x.username===u)){toast('این نام کاربری قبلاً استفاده شده',false);return;}
+ if(p.length<4){toast('رمز باید حداقل ۴ کاراکتر باشد',false);return;}
+ sellers.push({id:Date.now(),username:u,pass:p});saveSellers();toast('فروشنده تعریف شد');renderSettings();
+}
+function updSellerPass(id){
+ if(!isAdmin())return;
+ const s=sellers.find(x=>x.id===id);if(!s)return;
+ const p=(document.getElementById('sp'+id).value||'').trim();
+ if(p.length<4){toast('رمز باید حداقل ۴ کاراکتر باشد',false);return;}
+ s.pass=p;saveSellers();toast('رمز فروشنده به‌روز شد');renderSettings();
+}
+function delSeller(id){
+ if(!isAdmin())return;
+ if(!confirm('حذف این فروشنده؟'))return;
+ sellers=sellers.filter(x=>x.id!==id);saveSellers();renderSettings();
+}
+function sellersHtml(){
+ return `<div class="card p-3 mb-3"><h3 class="font-bold mb-2">👤 تعریف فروشندگان (حداکثر ۵ نفر — فقط مدیر)</h3>
+ <p class="text-xs text-slate-400 mb-2">نام کاربری بعد از ثبت قابل تغییر نیست. فروشنده می‌تواند رمز خود را تغییر دهد؛ رمز فعلی همین‌جا برای مدیر قابل مشاهده و تغییر است.</p>
+ <table><thead><tr><th>نام کاربری</th><th>رمز</th><th></th></tr></thead><tbody>
+ ${sellers.map(x=>`<tr><td>${esc(x.username)}</td><td><input id="sp${x.id}" value="${esc(x.pass)}" style="width:140px"></td><td><button class="btn btn-p text-xs" onclick="updSellerPass(${x.id})">ذخیره رمز</button> <button class="btn btn-d text-xs" onclick="delSeller(${x.id})">حذف</button></td></tr>`).join('')||'<tr><td colspan=3>فروشنده‌ای تعریف نشده</td></tr>'}
+ </tbody></table>
+ ${sellers.length<5?`<div class="flex gap-2 mt-3 flex-wrap"><input id="slUser" placeholder="نام کاربری (انگلیسی)" style="width:180px"><input id="slPass" placeholder="رمز (حداقل ۴)" style="width:160px"><button class="btn btn-p" onclick="addSeller()">افزودن فروشنده</button></div>`:'<p class="text-xs text-slate-400">ظرفیت ۵ فروشنده تکمیل است.</p>'}
+ </div>`;
 }
 function logout(){stopScan();user=null;cart=[];document.getElementById('appView').classList.add('hidden');document.getElementById('loginView').classList.remove('hidden');document.getElementById('liPass').value='';}
 function canSee(t){return user&&user.tabs.includes(t);}
@@ -243,6 +297,7 @@ function renderTabs(){
 }
 function renderTab(){
  if(curTab==='pos')renderPOS();
+ else if(curTab==='invoices')renderInvoices();
  else if(curTab==='categories')renderCategories();
  else if(curTab==='customers')renderCustomers();
  else if(curTab==='plans')renderPlans();
@@ -1016,6 +1071,7 @@ const custFull=u=>u?(u.name+(u.mobile?' - '+u.mobile:'')):'';
 const custName=i=>i.customer_name||'مشتری حضوری';
 const invNo=i=>i.no||('#'+i.id);
 const isAdmin=()=>!!(user&&user.username==='admin');
+const canEditInv=()=>!!(user&&(user.username==='admin'||user.username==='acc'));
 let retOrig=null, editInvId=null;
 const NEG_KEYS=['line_total','disc','vat','cogs','gross_profit'];
 function loadReturn(){
@@ -1071,25 +1127,36 @@ function delInv(id){
  for(const it of inv.items||[]){const p=products.find(x=>x.barcode===it.barcode); if(p) p.stock+=it.qty;}
  if(inv.is_return){const o=invoices.find(x=>x.id===inv.ref_id); if(o&&o.returned) for(const it of inv.items) o.returned[it.barcode]=(o.returned[it.barcode]||0)+it.qty;}
  invoices=invoices.filter(i=>i.id!==id);
- lsSet(LS.i,invoices);lsSet(LS.p,products);editInvId=null;toast('فاکتور حذف شد');renderSalesReport();
+ lsSet(LS.i,invoices);lsSet(LS.p,products);editInvId=null;toast('فاکتور حذف شد');renderTab();
 }
-function startInvEdit(id){ if(!isAdmin())return; editInvId=id; renderSalesReport(); }
+function startInvEdit(id){ if(!canEditInv())return; editInvId=id; renderTab(); }
 function saveInvEdit(){
- if(!isAdmin())return;
+ if(!canEditInv())return;
  const inv=invoices.find(i=>i.id===editInvId); if(!inv)return;
  inv.pay_method=document.getElementById('eiPay').value;
  const cid=document.getElementById('eiCust').value;
  const cu=customers.find(u=>String(u.id)===cid);
  inv.customer_id=cu?cu.id:null; inv.customer_name=cu?custFull(cu):''; inv.customer_nid=cu?(cu.national_id||''):'';
- lsSet(LS.i,invoices); editInvId=null; toast('فاکتور ویرایش شد'); renderSalesReport();
+ lsSet(LS.i,invoices); editInvId=null; toast('فاکتور ویرایش شد'); renderTab();
+}
+function renderInvoices(){
+ const c=document.getElementById('content');
+ const q=(window._invQ||'').trim().toLowerCase();
+ const list=invoices.slice().reverse().filter(i=>!q||invNo(i).toLowerCase().includes(q)||custName(i).toLowerCase().includes(q)).slice(0,300);
+ c.innerHTML=`${invEditCard()}<div class="card p-3 mb-3"><h3 class="font-bold mb-2">🧾 فاکتورها</h3>
+ <input placeholder="جستجوی شماره فاکتور یا نام مشتری" value="${esc(window._invQ||'')}" oninput="window._invQ=this.value;renderInvoices()" class="w-full mb-2">
+ <div class="overflow-x-auto"><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>نوع</th><th>پرداخت</th><th>مبلغ</th><th>عملیات</th></tr></thead><tbody>
+ ${list.map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${i.is_return?'<span class="text-amber-300">مرجوعی ('+esc(i.ref_no||'')+')</span>':'فروش'}</td><td>${esc(i.pay_method||'نقدی')}</td><td>${fmoney(i.total)}</td>
+ <td class="whitespace-nowrap"><button class="btn btn-p text-xs" onclick="showInvoice(${i.id})">🖨 چاپ</button>${canEditInv()?` <button class="btn btn-s text-xs" onclick="startInvEdit(${i.id})">✏️ ویرایش</button>`:''}${isAdmin()?` <button class="btn btn-d text-xs" onclick="delInv(${i.id})">🗑 حذف</button>`:''}</td></tr>`).join('')||'<tr><td colspan=7>—</td></tr>'}
+ </tbody></table></div></div>`;
 }
 function invEditCard(){
- const inv=invoices.find(i=>i.id===editInvId); if(!inv||!isAdmin())return '';
+ const inv=invoices.find(i=>i.id===editInvId); if(!inv||!canEditInv())return '';
  const pays=['نقدی','کارتخوان','کارت به کارت','نسیه','آنلاین'];
  return `<div class="card p-3 mt-3"><h3 class="font-bold mb-2">✏️ ویرایش فاکتور ${esc(invNo(inv))} (مدیر)</h3>
  <label class="text-xs">نوع پرداخت</label><select id="eiPay">${pays.map(x=>`<option ${x===(inv.pay_method||'نقدی')?'selected':''}>${x}</option>`).join('')}</select>
  <label class="text-xs mt-2 block">مشتری</label><select id="eiCust"><option value="">مشتری حضوری</option>${customers.map(u=>`<option value="${u.id}" ${String(u.id)===String(inv.customer_id)?'selected':''}>${esc(custFull(u))}</option>`).join('')}</select>
- <div class="flex gap-2 mt-3"><button class="btn btn-p" onclick="saveInvEdit()">ذخیره</button><button class="btn btn-s" onclick="editInvId=null;renderSalesReport()">انصراف</button></div>
+ <div class="flex gap-2 mt-3"><button class="btn btn-p" onclick="saveInvEdit()">ذخیره</button><button class="btn btn-s" onclick="editInvId=null;renderTab()">انصراف</button></div>
  <p class="text-xs text-slate-400 mt-2">اقلام و تعداد فاکتور قابل ویرایش نیست؛ برای اصلاح تعداد از بخش مرجوعی استفاده کنید.</p></div>`;
 }
 const daysTo=d=>Math.ceil((new Date(d+'T00:00:00')-new Date())/864e5);
@@ -1380,7 +1447,7 @@ function renderSettings(){
   </div>
   <p class="text-xs text-slate-400 mt-1">پیش‌فرض: تیره</p>
  </div>` : '';
- c.innerHTML= storeSettingsHtml + themeHtml + `
+ c.innerHTML= (isAdmin?sellersHtml():'') + storeSettingsHtml + themeHtml + `
  <div class="card p-3 mb-3"><h3 class="font-bold mb-2">تنظیمات مالی</h3>
   <div class="grid grid-cols-2 gap-2">
    <div><label class="text-xs">نرخ مالیات عملکرد % (15 تا 20)</label>
@@ -1450,7 +1517,7 @@ function saveSettings(){
  settings.income_tax_percent=t;lsSet(LS.s,settings);toast('تنظیمات ذخیره شد');
 }
 function exportBackup(){
- const blob=new Blob([JSON.stringify({app:'cosmetics-pos',version:4,products,categories,customers,plans,invoices,expenses,settings,exported_at:new Date().toISOString(),jalali:jdate(new Date())},null,2)],{type:'application/json'});
+ const blob=new Blob([JSON.stringify({app:'cosmetics-pos',version:4,products,categories,customers,plans,invoices,expenses,settings,sellers,exported_at:new Date().toISOString(),jalali:jdate(new Date())},null,2)],{type:'application/json'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
  a.download='cosmetics-pos-backup-'+jdate(new Date()).replace(/[\/]/g,'-')+'.json';a.click();
  toast('پشتیبان دانلود شد');
@@ -1467,6 +1534,7 @@ function importBackup(input){
    if(Array.isArray(d.plans)){plans=d.plans;lsSet(LS.pl,plans);}
    if(Array.isArray(d.categories)){categories=d.categories;lsSet(LS.c,categories);}
    if(d.settings){settings=Object.assign(settings,d.settings);applyStoreBranding();applyTheme();}
+   if(Array.isArray(d.sellers)){sellers=d.sellers.filter(x=>x&&x.username&&x.pass&&!USERS[x.username]).slice(0,5);saveSellers();}
    lsSet(LS.p,products);lsSet(LS.i,invoices);lsSet(LS.e,expenses);lsSet(LS.s,settings);
    toast('بازیابی انجام شد');renderSettings();
  }catch(e){toast('فایل پشتیبان معتبر نیست',false);}};
@@ -1606,8 +1674,7 @@ function renderSalesReport(){
   ${ent.map(([k,g])=>`<tr><td>${esc(k)}</td><td>${fmt(g.inv.size)}</td><td>${fmt(g.qty)}</td><td>${fmoney(g.rev)}</td><td>${fmoney(g.cogs)}</td><td class="${g.profit>=0?'text-emerald-400':'text-red-400'}">${fmoney(g.profit)}</td></tr>`).join('')||'<tr><td colspan="6">در این بازه فروشی ثبت نشده</td></tr>'}
   </tbody></table>
   <button class="btn btn-s w-full mt-3" onclick="exportSalesCsv()">⬇️ دریافت فایل اکسل (CSV)</button></div>
- <div class="card p-3 mt-3 overflow-x-auto"><h3 class="font-bold mb-2">فاکتورهای این بازه</h3><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>تخفیف</th><th>مبلغ</th><th></th></tr></thead><tbody>${[...new Map(rows.map(r=>[r.inv.id,r.inv])).values()].map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${fmoney(i.discount||0)}</td><td>${fmoney(i.total)}</td><td><button class="btn btn-p text-xs" onclick="showInvoice(${i.id})">🖨 فاکتور</button>${isAdmin()?` <button class="btn btn-s text-xs" onclick="startInvEdit(${i.id})">✏️ ویرایش</button> <button class="btn btn-d text-xs" onclick="delInv(${i.id})">🗑 حذف</button>`:''}</td></tr>`).join('')||'<tr><td colspan=6>—</td></tr>'}</tbody></table></div>`;
- c.insertAdjacentHTML('afterbegin',invEditCard());
+ <div class="card p-3 mt-3 overflow-x-auto"><h3 class="font-bold mb-2">فاکتورهای این بازه</h3><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>تخفیف</th><th>مبلغ</th><th></th></tr></thead><tbody>${[...new Map(rows.map(r=>[r.inv.id,r.inv])).values()].map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${fmoney(i.discount||0)}</td><td>${fmoney(i.total)}</td><td></td></tr>`).join('')||'<tr><td colspan=6>—</td></tr>'}</tbody></table></div>`;
  window._rpRows=rows;
 }
 function exportSalesCsv(){
