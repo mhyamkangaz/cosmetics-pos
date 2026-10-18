@@ -833,7 +833,7 @@ function renderProducts(){
    <td class="${marg<0?'text-red-400':'text-emerald-400'}">${fmoney(marg)} (${margPct.toFixed(0)}٪)</td>
    <td class="${p.stock<5?'text-red-400 font-bold':''}">${fmt(p.stock)}</td>
    <td>${expCell(p)}</td>
-   <td class="flex gap-1"><button class="btn btn-s text-xs" onclick="editProduct(${i})">ویرایش</button><button class="btn btn-d text-xs" onclick="delProduct(${i})">حذف</button></td>
+   <td class="flex gap-1">${isAdmin()?`<button class="btn btn-s text-xs" onclick="editProduct(${i})">ویرایش</button><button class="btn btn-d text-xs" onclick="delProduct(${i})">حذف</button>`:''}</td>
   </tr>`}).join('')}</tbody></table>
  </div>`;
 }
@@ -861,6 +861,7 @@ function saveProduct(){
   purchase_price:+g('pBuy')||0,sale_price:+g('pSale')||0,vat_percent:+g('pVat')||0,stock:Math.max(0,Math.round(+g('pStock')||0)),
   purchase_date:g('pPDate'),invoice_no:g('pInvNo'),supplier:g('pSupplier'),start_date:g('pStart'),expiry_date:g('pExp')};
  const ix=products.findIndex(p=>p.barcode===b);
+ if(ix>=0&&!isAdmin()){alert('ویرایش محصول موجود فقط برای مدیر مجاز است');return;}
  if(ix>=0)products[ix]=rec; else products.push(rec);
  lsSet(LS.p,products);clearForm();toast('ذخیره شد');renderProducts();
 }
