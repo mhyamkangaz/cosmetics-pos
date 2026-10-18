@@ -469,9 +469,9 @@ function toCanvas(source, maxDim = 1400) {
   cv.getContext('2d', { willReadFrequently: true }).drawImage(source, 0, 0, cv.width, cv.height);
   return cv;
 }
-function scaleCanvas(cv, maxDim) {
+function scaleCanvas(cv, maxDim, allowUp = false) {
   const sc = maxDim / Math.max(cv.width, cv.height);
-  if (sc >= 1) return cv;
+  if (sc >= 1 && !allowUp) return cv;
   const o = document.createElement('canvas');
   o.width = Math.round(cv.width * sc); o.height = Math.round(cv.height * sc);
   o.getContext('2d', { willReadFrequently: true }).drawImage(cv, 0, 0, o.width, o.height);
@@ -510,7 +510,8 @@ const canvasToBlob = cv => new Promise(r => cv.toBlob(r, 'image/jpeg', 0.92));
 async function runMultiPassDetection(src, onProgress) {
   if (!src) return null;
   const P = m => { if (onProgress) onProgress(m); };
-  const big = scaleCanvas(src, 1600);
+  // عکس‌های موبایل (مثلاً ۶۸۰px) برای EAN خیلی ریز هستند؛ بزرگ‌نمایی تا ۱۶۰۰px
+  const big = scaleCanvas(src, 1600, true);
   const variants = [
     big,
     cropCanvas(big, 0.1, 0.15, 0.8, 0.7),
@@ -519,18 +520,25 @@ async function runMultiPassDetection(src, onProgress) {
     cropCanvas(big, 0, 0, 1, 0.5),
     scaleCanvas(big, 800)
   ];
+  // اجماع: یک خوانش تکی ممکن است اشتباه باشد (مثلاً ۴۲۶۱۰۰۶۰۰۹۲۶۸ به‌جای ۶۲۶۲۴۶۹۰۰۹۲۶۸ با چک‌دیجیت معتبر)،
+  // پس کدی پذیرفته می‌شود که حداقل دو بار در پاس‌های مختلف دیده شود.
+  const votes = {}, order = [];
+  const add = c => { if (!c) return false; if (!votes[c]) { votes[c] = 0; order.push(c); } votes[c]++; return votes[c] >= 2; };
+  const best = () => order.slice().sort((x, y) => votes[y] - votes[x])[0] || null;
   P('مرحله ۱: تشخیص سریع...');
-  for (const v of variants) { const c = await bdDetect(v); if (c) return c; }
+  for (const v of variants) { if (add(await bdDetect(v))) return best(); }
   P('مرحله ۲: دیکودر داخلی EAN/UPC...');
   for (const v of variants) {
-    for (const cv of [v, enhanceContrast(v)]) { const c = jsDecodeCanvas(cv); if (c) return c; }
+    for (const cv of [v, enhanceContrast(v)]) { if (add(jsDecodeCanvas(cv))) return best(); }
     await new Promise(r => setTimeout(r, 0));
   }
+  if (order.length) return best();
   P('مرحله ۳: تحلیل عمیق (چرخش و کنتراست)...');
   for (const v of variants.slice(0, 3)) {
-    for (const deg of [90, 180, 270]) { const c = await bdDetect(rotateCanvas(v, deg)); if (c) return c; }
-    const c = await bdDetect(enhanceContrast(v)); if (c) return c;
+    for (const deg of [90, 180, 270]) { if (add(await bdDetect(rotateCanvas(v, deg)))) return best(); }
+    if (add(await bdDetect(enhanceContrast(v)))) return best();
   }
+  if (order.length) return best();
   P('مرحله ۴: کتابخانه ZXing...');
   if (await loadH5Lib()) {
     let host = document.getElementById('reader-hidden-tmp');
@@ -894,7 +902,10 @@ function renderPOS(){
   <div class="mt-3"><label class="text-xs">مشتری</label><div class="flex gap-2"><select id="posCust" onchange="posCustChange(this.value)">${posCustOptions()}</select><button class="btn btn-s" onclick="setTab('customers')">＋</button></div><div id="custWarn"></div></div>
   <div class="mt-3"><label class="text-xs">نوع فروش / پرداخت</label><select id="payMethod"><option>نقدی</option><option>کارتخوان</option><option>کارت به کارت</option><option>نسیه</option><option>آنلاین</option></select></div>
   <button class="btn btn-p w-full mt-3" onclick="checkout()">ثبت فروش</button>
- </div><div id="receipt" class="mt-3"></div>`;
+ </div><div id="receipt" class="mt-3"></div>
+ <div class="card p-3 mt-3"><h2 class="font-bold mb-2">↩ مرجوعی کالا</h2>
+  <div class="flex gap-2"><input id="retNo" placeholder="شماره فاکتور (مثلاً F-000001)"><button class="btn btn-s" onclick="loadReturn()">بارگذاری</button></div>
+  <div id="retBody" class="mt-2"></div></div>`;
 
  drawCart();posCustChange(posCustId);
 }
@@ -1004,6 +1015,83 @@ let tempSeal=null;
 const custFull=u=>u?(u.name+(u.mobile?' - '+u.mobile:'')):'';
 const custName=i=>i.customer_name||'مشتری حضوری';
 const invNo=i=>i.no||('#'+i.id);
+const isAdmin=()=>!!(user&&user.username==='admin');
+let retOrig=null, editInvId=null;
+const NEG_KEYS=['line_total','disc','vat','cogs','gross_profit'];
+function loadReturn(){
+ const q=(document.getElementById('retNo').value||'').trim().toUpperCase();
+ const inv=invoices.slice().reverse().find(i=>!i.is_return&&(invNo(i).toUpperCase()===q||String(i.id)===q));
+ if(!inv){toast('فاکتوری با این شماره یافت نشد',false);retOrig=null;document.getElementById('retBody').innerHTML='';return;}
+ retOrig=inv;
+ document.getElementById('retBody').innerHTML=`<div class="text-sm mb-2">فاکتور <b>${esc(invNo(inv))}</b> — ${esc(custName(inv))} — ${jdate(new Date(inv.date))}</div>
+ <table><thead><tr><th>کالا</th><th>خریداری‌شده</th><th>قابل مرجوعی</th><th>تعداد مرجوعی</th></tr></thead><tbody>
+ ${inv.items.map((it,k)=>{const left=it.qty-((inv.returned||{})[it.barcode]||0);return `<tr><td>${esc(it.name)}</td><td>${fmt(it.qty)}</td><td>${fmt(left)}</td><td><input type="number" id="retQ${k}" min="0" max="${left}" value="0" ${left<=0?'disabled':''} style="width:80px"></td></tr>`}).join('')}
+ </tbody></table>
+ <input id="retReason" placeholder="دلیل مرجوعی (اختیاری)" class="mt-2">
+ <button class="btn btn-p w-full mt-2" onclick="saveReturn()">ثبت مرجوعی</button>`;
+}
+function saveReturn(){
+ const inv=retOrig; if(!inv){toast('ابتدا فاکتور را بارگذاری کنید',false);return;}
+ const items=[];
+ for(let k=0;k<inv.items.length;k++){
+  const it=inv.items[k];
+  const left=it.qty-((inv.returned||{})[it.barcode]||0);
+  const q=parseInt(document.getElementById('retQ'+k).value)||0;
+  if(q<0||q>left){toast('تعداد مرجوعی «'+it.name+'» نامعتبر است',false);return;}
+  if(!q)continue;
+  const ratio=q/it.qty, ni={...it,qty:-q};
+  for(const key of NEG_KEYS) if(typeof it[key]==='number') ni[key]=-it[key]*ratio;
+  items.push(ni);
+ }
+ if(!items.length){toast('تعداد مرجوعی را وارد کنید',false);return;}
+ const sum=f=>items.reduce((a,x)=>a+f(x),0);
+ const rev=sum(x=>(x.line_total||0)-(x.disc||0));
+ const vat=sum(x=>x.vat||0);
+ const ret={id:Date.now(),no:'R-'+String(Date.now()).slice(-8),is_return:true,ref_no:invNo(inv),ref_id:inv.id,
+  reason:(document.getElementById('retReason')||{}).value||'',
+  customer_id:inv.customer_id,customer_name:inv.customer_name,customer_nid:inv.customer_nid,plan_name:inv.plan_name,
+  discount:sum(x=>x.disc||0),gross_total:sum(x=>x.line_total||0),date:new Date().toISOString(),jalali_date:jdate(new Date()),
+  seller:user.username,seller_name:user.role,pay_method:inv.pay_method,items,
+  revenue:rev,cogs:sum(x=>x.cogs||0),gross_profit:sum(x=>x.gross_profit||0),vat:vat,total:rev+vat};
+ inv.returned=inv.returned||{};
+ for(const x of items){
+  const p=products.find(y=>y.barcode===x.barcode); if(p) p.stock-=x.qty; // qty negative => stock increases
+  inv.returned[x.barcode]=(inv.returned[x.barcode]||0)-x.qty;
+ }
+ invoices.push(ret);lsSet(LS.i,invoices);lsSet(LS.p,products);
+ toast('مرجوعی ثبت شد: '+ret.no);
+ retOrig=null;renderPOS();
+ setTimeout(()=>{const b=document.getElementById('receipt');if(b)b.innerHTML='';},0);
+}
+function delInv(id){
+ if(!isAdmin()){toast('فقط مدیر می‌تواند فاکتور را حذف کند',false);return;}
+ const inv=invoices.find(i=>i.id===id); if(!inv)return;
+ if(!inv.is_return && invoices.some(x=>x.is_return&&x.ref_id===inv.id)){toast('ابتدا مرجوعی‌های این فاکتور را حذف کنید',false);return;}
+ if(!confirm('فاکتور '+invNo(inv)+' حذف شود؟ موجودی کالاها اصلاح می‌شود.'))return;
+ for(const it of inv.items||[]){const p=products.find(x=>x.barcode===it.barcode); if(p) p.stock+=it.qty;}
+ if(inv.is_return){const o=invoices.find(x=>x.id===inv.ref_id); if(o&&o.returned) for(const it of inv.items) o.returned[it.barcode]=(o.returned[it.barcode]||0)+it.qty;}
+ invoices=invoices.filter(i=>i.id!==id);
+ lsSet(LS.i,invoices);lsSet(LS.p,products);editInvId=null;toast('فاکتور حذف شد');renderSalesReport();
+}
+function startInvEdit(id){ if(!isAdmin())return; editInvId=id; renderSalesReport(); }
+function saveInvEdit(){
+ if(!isAdmin())return;
+ const inv=invoices.find(i=>i.id===editInvId); if(!inv)return;
+ inv.pay_method=document.getElementById('eiPay').value;
+ const cid=document.getElementById('eiCust').value;
+ const cu=customers.find(u=>String(u.id)===cid);
+ inv.customer_id=cu?cu.id:null; inv.customer_name=cu?custFull(cu):''; inv.customer_nid=cu?(cu.national_id||''):'';
+ lsSet(LS.i,invoices); editInvId=null; toast('فاکتور ویرایش شد'); renderSalesReport();
+}
+function invEditCard(){
+ const inv=invoices.find(i=>i.id===editInvId); if(!inv||!isAdmin())return '';
+ const pays=['نقدی','کارتخوان','کارت به کارت','نسیه','آنلاین'];
+ return `<div class="card p-3 mt-3"><h3 class="font-bold mb-2">✏️ ویرایش فاکتور ${esc(invNo(inv))} (مدیر)</h3>
+ <label class="text-xs">نوع پرداخت</label><select id="eiPay">${pays.map(x=>`<option ${x===(inv.pay_method||'نقدی')?'selected':''}>${x}</option>`).join('')}</select>
+ <label class="text-xs mt-2 block">مشتری</label><select id="eiCust"><option value="">مشتری حضوری</option>${customers.map(u=>`<option value="${u.id}" ${String(u.id)===String(inv.customer_id)?'selected':''}>${esc(custFull(u))}</option>`).join('')}</select>
+ <div class="flex gap-2 mt-3"><button class="btn btn-p" onclick="saveInvEdit()">ذخیره</button><button class="btn btn-s" onclick="editInvId=null;renderSalesReport()">انصراف</button></div>
+ <p class="text-xs text-slate-400 mt-2">اقلام و تعداد فاکتور قابل ویرایش نیست؛ برای اصلاح تعداد از بخش مرجوعی استفاده کنید.</p></div>`;
+}
 const daysTo=d=>Math.ceil((new Date(d+'T00:00:00')-new Date())/864e5);
 const expState=p=>{if(!p.expiry_date)return '';const d=daysTo(p.expiry_date);return d<0?'expired':(d<=92?'soon':'ok');};
 function expCell(p){const s=expState(p);if(!p.expiry_date)return '—';
@@ -1102,9 +1190,9 @@ function showInvoice(id){
   <div style="text-align:left;font-size:13px"><div>شمارهٔ فاکتور: <b>${esc(invNo(inv))}</b></div><div>تاریخ: ${jdate(d)}</div></div></div>
   <div style="margin:10px 0;padding:6px;background:#f1f5f9;border-radius:6px;font-size:13px">خریدار: <b>${esc(inv.customer_name||'مشتری حضوری')}</b>${(inv.customer_nid||cu&&cu.national_id)?' — کد/شناسهٔ ملی: '+esc(inv.customer_nid||cu.national_id):''} — تاریخ خرید: ${jdate(d)}</div>
   <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="${th}">ردیف</th><th style="${th}">بارکد</th><th style="${th}">نام کالا</th><th style="${th}">تعداد</th><th style="${th}">قیمت واحد</th><th style="${th}">جمع</th></tr></thead><tbody>${rows}</tbody></table>
-  ${settings.store_seal?`<div style="margin-top:8px"><img src="${settings.store_seal}" style="max-height:110px;max-width:200px"></div>`:''}
   <div style="margin-top:10px;max-width:320px;margin-right:auto;font-size:13px">${row('جمع کالا',fmoney(inv.gross_total||inv.revenue))}${inv.discount?row('تخفیف'+(inv.plan_name?' ('+esc(inv.plan_name)+')':''),'− '+fmoney(inv.discount)):''}${row('مالیات',fmoney(inv.vat))}${row('مبلغ نهایی',fmoney(inv.total),'border-top:1px solid #111;font-size:15px')}</div>
-  <div style="margin-top:6px;font-size:13px">مبلغ به حروف: <b>${numWords(inv.total)} تومان</b></div></div>`;
+  <div style="margin-top:6px;font-size:13px">مبلغ به حروف: <b>${numWords(inv.total)} تومان</b></div>
+  ${settings.store_seal?`<div style="margin-top:12px;display:flex;justify-content:flex-start"><img src="${settings.store_seal}" style="max-height:110px;max-width:200px"></div>`:''}</div>`;
  document.getElementById('invModal').classList.remove('hidden');}
 function closeInvoice(){const m=document.getElementById('invModal');m.classList.add('hidden');m.innerHTML='';}
 async function shareInvoice(id){
@@ -1518,7 +1606,8 @@ function renderSalesReport(){
   ${ent.map(([k,g])=>`<tr><td>${esc(k)}</td><td>${fmt(g.inv.size)}</td><td>${fmt(g.qty)}</td><td>${fmoney(g.rev)}</td><td>${fmoney(g.cogs)}</td><td class="${g.profit>=0?'text-emerald-400':'text-red-400'}">${fmoney(g.profit)}</td></tr>`).join('')||'<tr><td colspan="6">در این بازه فروشی ثبت نشده</td></tr>'}
   </tbody></table>
   <button class="btn btn-s w-full mt-3" onclick="exportSalesCsv()">⬇️ دریافت فایل اکسل (CSV)</button></div>
- <div class="card p-3 mt-3 overflow-x-auto"><h3 class="font-bold mb-2">فاکتورهای این بازه</h3><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>تخفیف</th><th>مبلغ</th><th></th></tr></thead><tbody>${[...new Map(rows.map(r=>[r.inv.id,r.inv])).values()].map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${fmoney(i.discount||0)}</td><td>${fmoney(i.total)}</td><td><button class="btn btn-p text-xs" onclick="showInvoice(${i.id})">🖨 فاکتور</button></td></tr>`).join('')||'<tr><td colspan=6>—</td></tr>'}</tbody></table></div>`;
+ <div class="card p-3 mt-3 overflow-x-auto"><h3 class="font-bold mb-2">فاکتورهای این بازه</h3><table><thead><tr><th>شماره</th><th>تاریخ</th><th>مشتری</th><th>تخفیف</th><th>مبلغ</th><th></th></tr></thead><tbody>${[...new Map(rows.map(r=>[r.inv.id,r.inv])).values()].map(i=>`<tr><td>${esc(invNo(i))}</td><td>${jdate(new Date(i.date))}</td><td>${esc(custName(i))}</td><td>${fmoney(i.discount||0)}</td><td>${fmoney(i.total)}</td><td><button class="btn btn-p text-xs" onclick="showInvoice(${i.id})">🖨 فاکتور</button>${isAdmin()?` <button class="btn btn-s text-xs" onclick="startInvEdit(${i.id})">✏️ ویرایش</button> <button class="btn btn-d text-xs" onclick="delInv(${i.id})">🗑 حذف</button>`:''}</td></tr>`).join('')||'<tr><td colspan=6>—</td></tr>'}</tbody></table></div>`;
+ c.insertAdjacentHTML('afterbegin',invEditCard());
  window._rpRows=rows;
 }
 function exportSalesCsv(){
